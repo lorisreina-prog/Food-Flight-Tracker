@@ -6,4 +6,4 @@ Pillow==11.2.1
 python-multipart==0.0.20
 anthropic==0.52.0
 pyzbar==0.1.9
-psycopg2-binary==2.9.9
+psycopg[binary]==3.2.6
