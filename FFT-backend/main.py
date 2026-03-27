@@ -217,9 +217,15 @@ def seed_data():
         c.execute("INSERT INTO crowd_rating (batch_id, stars, comment, user_token, submitted_at) VALUES (%s,%s,%s,%s,%s)", cr)
     conn.commit()
 
+    scan_events = [
+        ("demo-user-001", 3, "2026-03-23T10:00:00"),
+    ]
+    for se in scan_events:
+        c.execute("INSERT INTO scan_event (user_token, batch_id, scanned_at) VALUES (%s,%s,%s)", se)
+    conn.commit()
+
     achievements = [
         ("demo-user-001", "first_scan", "2026-03-23T10:00:00", 3),
-        ("demo-user-001", "explorer",   "2026-03-23T10:30:00", None),
     ]
     for ach in achievements:
         c.execute("INSERT INTO achievement (user_token, achievement_type, earned_at, batch_id) VALUES (%s,%s,%s,%s)", ach)

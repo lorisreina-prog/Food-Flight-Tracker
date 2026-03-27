@@ -359,6 +359,7 @@ class AchievementItem(BaseModel):
 
 class OcrRequest(BaseModel):
     image_base64: str
+    user_token: Optional[str] = None
 
 
 class OcrResponse(BaseModel):

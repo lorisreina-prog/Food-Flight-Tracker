@@ -535,8 +535,6 @@ def chat(batch_id: int, body: ChatRequest, conn=Depends(db)):
     )
     conn.commit()
 
-    award_achievements(conn, body.session_id, "scan", batch_id)
-
     return ChatResponse(reply=reply, session_id=body.session_id)
 
 
@@ -888,6 +886,11 @@ def add_crowd_rating(batch_id: int, body: CrowdRatingCreate, conn=Depends(db)):
     rating_id = c.fetchone()["rating_id"]
     conn.commit()
 
+    c.execute(
+        "INSERT INTO scan_event (user_token, batch_id, scanned_at) VALUES (%s,%s,%s)",
+        (body.user_token, batch_id, now)
+    )
+    conn.commit()
     award_achievements(conn, body.user_token, "scan", batch_id)
 
     return CrowdRatingCreated(rating_id=rating_id)
@@ -933,7 +936,16 @@ def scan_ocr(body: OcrRequest, conn=Depends(db)):
     if not row:
         raise HTTPException(status_code=404, detail="no batch found in image")
 
-    return OcrResponse(qr_code=qr_code, batch_id=row["batch_id"])
+    found_batch_id = row["batch_id"]
+    if body.user_token:
+        c.execute(
+            "INSERT INTO scan_event (user_token, batch_id, scanned_at) VALUES (%s,%s,%s)",
+            (body.user_token, found_batch_id, now_iso())
+        )
+        conn.commit()
+        award_achievements(conn, body.user_token, "scan", found_batch_id)
+
+    return OcrResponse(qr_code=qr_code, batch_id=found_batch_id)
 
 
 def _hash_password(password: str) -> str:

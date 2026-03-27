@@ -189,6 +189,14 @@ def init_db():
         )
     """)
     c.execute("""
+        CREATE TABLE IF NOT EXISTS scan_event (
+            scan_id SERIAL PRIMARY KEY,
+            user_token TEXT NOT NULL,
+            batch_id INTEGER NOT NULL,
+            scanned_at TEXT NOT NULL
+        )
+    """)
+    c.execute("""
         CREATE TABLE IF NOT EXISTS achievement (
             ach_id SERIAL PRIMARY KEY,
             user_token TEXT NOT NULL,

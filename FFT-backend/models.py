@@ -121,16 +121,8 @@ def award_achievements(db, user_token: str, action: str, batch_id: int = None) -
 
     if action == "scan":
         c.execute(
-            """
-            SELECT COUNT(DISTINCT batch_id) as cnt FROM (
-                SELECT batch_id FROM crowd_rating WHERE user_token=%s
-                UNION
-                SELECT batch_id FROM ai_chat_message WHERE session_id=%s
-                UNION
-                SELECT batch_id FROM complaint WHERE reporter_name=%s
-            ) AS sub
-            """,
-            (user_token, user_token, user_token)
+            "SELECT COUNT(DISTINCT batch_id) as cnt FROM scan_event WHERE user_token=%s",
+            (user_token,)
         )
         count = c.fetchone()["cnt"]
         if count >= 1:
