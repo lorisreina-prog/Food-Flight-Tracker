@@ -131,6 +131,7 @@ class ComplaintCreate(BaseModel):
     reporter_email: Optional[str] = None
     description: str
     category: str
+    user_token: Optional[str] = None
 
 
 class ComplaintCreated(BaseModel):
@@ -365,6 +366,17 @@ class OcrRequest(BaseModel):
 class OcrResponse(BaseModel):
     qr_code: str
     batch_id: int
+
+
+class ScanRegisterRequest(BaseModel):
+    qr_code: str
+    user_token: str
+
+
+class ScanRegisterResponse(BaseModel):
+    batch_id: int
+    qr_code: str
+    already_registered: bool
 
 
 class AuthRequest(BaseModel):

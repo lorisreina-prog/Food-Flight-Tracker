@@ -28,6 +28,7 @@ from schemas import (
     TrustScoreResponse, LeaderboardItem,
     CrowdRatingCreate, CrowdRatingCreated,
     AchievementItem, OcrRequest, OcrResponse,
+    ScanRegisterRequest, ScanRegisterResponse,
     AuthRequest, AuthResponse,
 )
 from qr import generate_qr, get_qr_image_path
@@ -355,15 +356,16 @@ def create_complaint(batch_id: int, body: ComplaintCreate, conn=Depends(db)):
 
     now = now_iso()
     c.execute(
-        "INSERT INTO complaint (batch_id, reporter_name, reporter_email, description, category, submitted_at, status) VALUES (%s,%s,%s,%s,%s,%s,'open') RETURNING complaint_id",
-        (batch_id, body.reporter_name, body.reporter_email, body.description, body.category, now)
+        "INSERT INTO complaint (batch_id, reporter_name, reporter_email, description, category, submitted_at, status, user_token) VALUES (%s,%s,%s,%s,%s,%s,'open',%s) RETURNING complaint_id",
+        (batch_id, body.reporter_name, body.reporter_email, body.description, body.category, now, body.user_token)
     )
     complaint_id = c.fetchone()["complaint_id"]
     conn.commit()
     c.execute("INSERT INTO complaint_rate_limit (batch_id, submitted_at) VALUES (%s,%s)", (batch_id, now))
     conn.commit()
 
-    award_achievements(conn, body.reporter_name, "complaint", batch_id)
+    identity = body.user_token or body.reporter_name
+    award_achievements(conn, identity, "complaint", batch_id)
 
     return ComplaintCreated(complaint_id=complaint_id)
 
@@ -886,13 +888,6 @@ def add_crowd_rating(batch_id: int, body: CrowdRatingCreate, conn=Depends(db)):
     rating_id = c.fetchone()["rating_id"]
     conn.commit()
 
-    c.execute(
-        "INSERT INTO scan_event (user_token, batch_id, scanned_at) VALUES (%s,%s,%s)",
-        (body.user_token, batch_id, now)
-    )
-    conn.commit()
-    award_achievements(conn, body.user_token, "scan", batch_id)
-
     return CrowdRatingCreated(rating_id=rating_id)
 
 
@@ -938,14 +933,44 @@ def scan_ocr(body: OcrRequest, conn=Depends(db)):
 
     found_batch_id = row["batch_id"]
     if body.user_token:
+        five_min_ago = (datetime.utcnow() - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%S")
         c.execute(
-            "INSERT INTO scan_event (user_token, batch_id, scanned_at) VALUES (%s,%s,%s)",
-            (body.user_token, found_batch_id, now_iso())
+            "SELECT scan_id FROM scan_event WHERE user_token=%s AND batch_id=%s AND scanned_at > %s",
+            (body.user_token, found_batch_id, five_min_ago)
         )
-        conn.commit()
-        award_achievements(conn, body.user_token, "scan", found_batch_id)
+        if not c.fetchone():
+            c.execute(
+                "INSERT INTO scan_event (user_token, batch_id, scanned_at) VALUES (%s,%s,%s)",
+                (body.user_token, found_batch_id, now_iso())
+            )
+            conn.commit()
+            award_achievements(conn, body.user_token, "scan", found_batch_id)
 
     return OcrResponse(qr_code=qr_code, batch_id=found_batch_id)
+
+
+@router.post("/api/scan/register", response_model=ScanRegisterResponse, status_code=201)
+def register_scan(body: ScanRegisterRequest, conn=Depends(db)):
+    c = conn.cursor()
+    c.execute("SELECT batch_id FROM batch WHERE qr_code=%s", (body.qr_code,))
+    row = c.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="batch not found")
+    batch_id = row["batch_id"]
+    five_min_ago = (datetime.utcnow() - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%S")
+    c.execute(
+        "SELECT scan_id FROM scan_event WHERE user_token=%s AND batch_id=%s AND scanned_at > %s",
+        (body.user_token, batch_id, five_min_ago)
+    )
+    if c.fetchone():
+        return ScanRegisterResponse(batch_id=batch_id, qr_code=body.qr_code, already_registered=True)
+    c.execute(
+        "INSERT INTO scan_event (user_token, batch_id, scanned_at) VALUES (%s,%s,%s)",
+        (body.user_token, batch_id, now_iso())
+    )
+    conn.commit()
+    award_achievements(conn, body.user_token, "scan", batch_id)
+    return ScanRegisterResponse(batch_id=batch_id, qr_code=body.qr_code, already_registered=False)
 
 
 def _hash_password(password: str) -> str:

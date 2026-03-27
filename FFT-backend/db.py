@@ -68,7 +68,8 @@ def init_db():
             description TEXT NOT NULL,
             category TEXT NOT NULL,
             submitted_at TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'open'
+            status TEXT NOT NULL DEFAULT 'open',
+            user_token TEXT NULL
         )
     """)
     c.execute("""
@@ -234,6 +235,7 @@ def init_db():
             created_at TEXT NOT NULL
         )
     """)
+    c.execute("ALTER TABLE complaint ADD COLUMN IF NOT EXISTS user_token TEXT NULL")
     conn.commit()
     conn.close()
 
