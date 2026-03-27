@@ -17,6 +17,13 @@ const ACHIEVEMENT_NAME: Record<string, string> = {
   rating: "Produkt bewertet",
 };
 
+const SvgAward = () => (
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="8" r="6" />
+    <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
+  </svg>
+);
+
 export default function AchievementToast({ achievement }: Props) {
   if (!achievement) return null;
 
@@ -24,9 +31,9 @@ export default function AchievementToast({ achievement }: Props) {
 
   return (
     <div className="achievement-toast" role="status" aria-live="polite">
-      <span className="achievement-icon">🏆</span>
+      <span className="achievement-icon"><SvgAward /></span>
       <div>
-        <div className="achievement-title">Neues Achievement!</div>
+        <div className="achievement-title">Neues Achievement</div>
         <div className="achievement-label">{name}</div>
       </div>
     </div>

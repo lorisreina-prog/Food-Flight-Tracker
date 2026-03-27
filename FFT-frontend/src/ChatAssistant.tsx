@@ -16,6 +16,31 @@ const STARTERS = [
   "Wie nachhaltig ist es?",
 ];
 
+const SvgMessageCircle = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
+const SvgChevronUp = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="18 15 12 9 6 15" />
+  </svg>
+);
+
+const SvgChevronDown = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+const SvgSend = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="22" y1="2" x2="11" y2="13" />
+    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+  </svg>
+);
+
 export default function ChatAssistant({ batch_id, batchId, product_name }: Props) {
   const resolvedId = batch_id ?? batchId ?? 0;
   const [open, setOpen] = useState(false);
@@ -53,9 +78,9 @@ export default function ChatAssistant({ batch_id, batchId, product_name }: Props
   return (
     <div className="card chat-card">
       <button className="chat-toggle" onClick={() => setOpen((o) => !o)}>
-        <span style={{ fontSize: 18 }}>💬</span>
+        <SvgMessageCircle />
         <span>Produkt-Assistent</span>
-        <span style={{ marginLeft: "auto", fontSize: 11, opacity: .6 }}>{open ? "▲" : "▼"}</span>
+        <span style={{ marginLeft: "auto", opacity: .5 }}>{open ? <SvgChevronUp /> : <SvgChevronDown />}</span>
       </button>
 
       {!open && (
@@ -106,7 +131,7 @@ export default function ChatAssistant({ batch_id, batchId, product_name }: Props
               onClick={() => send(input)}
               disabled={loading || !input.trim()}
             >
-              ↑
+              <SvgSend />
             </button>
           </div>
         </div>

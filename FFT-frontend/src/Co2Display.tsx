@@ -2,6 +2,12 @@ interface Props {
   co2TotalKg: number | null;
 }
 
+const SvgWind = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" />
+  </svg>
+);
+
 export default function Co2Display({ co2TotalKg }: Props) {
   if (co2TotalKg == null) return null;
 
@@ -16,9 +22,9 @@ export default function Co2Display({ co2TotalKg }: Props) {
         <div style={{
           width: 52, height: 52, borderRadius: "50%", background: bg,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 24, flexShrink: 0,
+          color, flexShrink: 0,
         }}>
-          🌍
+          <SvgWind />
         </div>
         <div>
           <div style={{ fontSize: 26, fontWeight: 800, color, letterSpacing: "-.02em" }}>
