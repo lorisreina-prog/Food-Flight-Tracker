@@ -10,6 +10,35 @@ const NUTRI_COLOR: Record<string, string> = {
 const TRUST_COLOR = (score: number) =>
   score < 40 ? "#DC2626" : score <= 70 ? "#D97706" : "#16A34A";
 
+function RankBadge({ rank }: { rank: number }) {
+  const gold = rank === 1;
+  const silver = rank === 2;
+  const bronze = rank === 3;
+
+  const bg = gold ? "#F59E0B" : silver ? "#94A3B8" : bronze ? "#B45309" : "var(--border-2)";
+  const color = gold || silver || bronze ? "#fff" : "var(--tx-2)";
+
+  return (
+    <span
+      style={{
+        width: 28, height: 28,
+        borderRadius: "50%",
+        background: bg,
+        color,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 11,
+        fontWeight: 800,
+        flexShrink: 0,
+        letterSpacing: "-.01em",
+      }}
+    >
+      {rank}
+    </span>
+  );
+}
+
 export default function Leaderboard() {
   const [items, setItems] = useState<LeaderboardItem[]>([]);
   const [batches, setBatches] = useState<BatchListItem[]>([]);
@@ -37,7 +66,6 @@ export default function Leaderboard() {
   if (!items.length) {
     return (
       <div className="empty-state">
-        <span className="empty-state-icon">🏆</span>
         <span className="empty-state-text">Noch keine Einträge im Leaderboard.</span>
       </div>
     );
@@ -53,7 +81,7 @@ export default function Leaderboard() {
             to={`/scan/${qrFor(item.batch_id)}`}
             className={`leaderboard-item ${isFirst ? "leaderboard-item--gold" : ""}`}
           >
-            <span className="lb-rank">{i < 3 ? ["🥇", "🥈", "🥉"][i] : `#${i + 1}`}</span>
+            <RankBadge rank={i + 1} />
 
             <div className="lb-main">
               <span className="lb-name">{item.product_name}</span>

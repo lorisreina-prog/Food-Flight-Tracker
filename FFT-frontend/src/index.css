@@ -67,8 +67,7 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   border-radius: var(--radius-sm); padding: 10px 20px;
   font-weight: 600; font-size: 14px; width: 100%;
   margin-top: 10px; gap: 6px;
-  transition: backg
-  round .15s, box-shadow .15s;
+  transition: background .15s, box-shadow .15s;
   box-shadow: 0 1px 2px rgba(79,70,229,.2);
 }
 .btn-primary:hover:not(:disabled) { background: #4338CA; box-shadow: 0 4px 12px rgba(79,70,229,.3); }
@@ -642,6 +641,154 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
 .empty-state-text { font-size: 14px; color: var(--tx-2); font-weight: 500; }
 .empty-state-sub { font-size: 13px; color: var(--tx-3); }
 
+/* ── Logo image ── */
+.admin-logo-img {
+  width: 32px; height: 32px; border-radius: 8px;
+  object-fit: cover; flex-shrink: 0;
+}
+.auth-logo-img {
+  width: 52px; height: 52px; border-radius: 12px;
+  object-fit: cover; flex-shrink: 0;
+}
+.scan-topbar-logo-img {
+  width: 22px; height: 22px; border-radius: 5px;
+  object-fit: cover; flex-shrink: 0;
+}
+.scanner-brand {
+  display: flex; align-items: center; gap: 8px;
+  margin-left: auto;
+}
+.scanner-brand-img {
+  width: 28px; height: 28px; border-radius: 7px;
+  object-fit: cover;
+}
+.scanner-brand-name {
+  font-size: 13px; font-weight: 700; color: var(--tx);
+  letter-spacing: -.01em;
+}
+
+/* ── Admin sidebar bottom ── */
+.admin-sidebar-bottom {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 8px 10px 12px;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+.admin-logout-btn {
+  display: flex; align-items: center; gap: 8px;
+  text-align: left; padding: 8px 12px;
+  border-radius: var(--radius-sm); font-size: 12px; font-weight: 500;
+  color: #6B7280; transition: background .12s, color .12s; width: 100%;
+}
+.admin-logout-btn:hover { background: rgba(255,255,255,.05); color: #9CA3AF; }
+
+/* ── Complaint action buttons ── */
+.complaint-action-btn {
+  padding: 5px 12px; border-radius: var(--radius-xs);
+  font-size: 12px; font-weight: 600;
+  background: transparent; border: 1.5px solid;
+  margin-right: 4px; transition: background .15s, opacity .15s;
+}
+.complaint-action-btn:hover { opacity: .8; }
+
+/* ── Scan topbar ── */
+.scan-topbar-logo {
+  font-size: 13px; font-weight: 800; color: var(--tx);
+  letter-spacing: .06em; display: flex; align-items: center; gap: 6px;
+}
+.scan-topbar-action {
+  font-size: 12px; color: var(--tx-3); font-weight: 500;
+  padding: 5px 10px; border-radius: var(--radius-xs);
+  border: 1px solid var(--border); background: var(--surface);
+  display: flex; align-items: center; gap: 5px;
+  transition: background .12s;
+}
+.scan-topbar-action:hover { background: var(--bg); color: var(--tx-2); }
+
+/* ── External product notice ── */
+.external-product-notice {
+  background: var(--amber-lt); border: 1px solid #FDE68A;
+  border-radius: var(--radius); padding: 12px 16px; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 12;
+}
+.external-product-icon { color: #92400E; flex-shrink: 0; display: flex; align-items: center; margin-right: 10px; }
+.external-product-title { font-weight: 700; font-size: 13px; color: #92400E; }
+.external-product-sub { font-size: 12px; color: #B45309; margin-top: 2px; }
+
+/* ── Auth pages (Login + Register) ── */
+.auth-page {
+  min-height: 100vh; background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px 16px;
+}
+.auth-card {
+  background: var(--surface); border-radius: 16px;
+  border: 1px solid var(--border); padding: 40px 36px;
+  width: 100%; max-width: 400px;
+  box-shadow: 0 8px 40px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.04);
+}
+.auth-brand {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 28px;
+}
+.auth-logo-mark {
+  width: 40px; height: 40px; background: var(--accent);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(79,70,229,.3);
+}
+.auth-brand-name {
+  font-size: 20px; font-weight: 800; color: var(--tx);
+  letter-spacing: -.03em;
+}
+.auth-heading { margin-bottom: 24px; }
+.auth-heading h1 { font-size: 22px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 5px; }
+.auth-heading p { font-size: 14px; color: var(--tx-2); }
+.auth-form { display: flex; flex-direction: column; gap: 12px; }
+.auth-field { display: flex; flex-direction: column; gap: 6px; }
+.auth-label { font-size: 13px; font-weight: 600; color: var(--tx-2); }
+.auth-field-hint {
+  font-size: 12px; color: var(--tx-3); margin-top: 3px;
+}
+.auth-field-hint--error { color: var(--red); }
+.auth-error {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--red); font-size: 13px;
+  background: var(--red-lt); border: 1px solid #FECACA;
+  border-radius: var(--radius-xs); padding: 10px 12px;
+}
+.auth-password-wrap { position: relative; display: flex; align-items: center; }
+.auth-password-input { padding-right: 44px !important; }
+.auth-eye-btn {
+  position: absolute; right: 12px;
+  color: var(--tx-3); display: flex; align-items: center;
+  padding: 4px; transition: color .12s;
+}
+.auth-eye-btn:hover { color: var(--tx-2); }
+.auth-switch {
+  margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border);
+  font-size: 13px; color: var(--tx-2); text-align: center;
+}
+.auth-switch-link {
+  color: var(--accent); font-weight: 600;
+  transition: opacity .12s;
+}
+.auth-switch-link:hover { opacity: .75; }
+.form-input--error { border-color: var(--red) !important; }
+.form-input--error:focus { box-shadow: 0 0 0 3px rgba(220,38,38,.1) !important; }
+
+/* ── Password strength indicator ── */
+.password-strength {
+  display: flex; flex-direction: column; gap: 4px; margin-top: 8px;
+}
+.password-strength-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--tx-3);
+  transition: color .15s;
+}
+.password-strength-item svg { flex-shrink: 0; opacity: .4; transition: opacity .15s; }
+.password-strength-item--ok { color: var(--green); }
+.password-strength-item--ok svg { opacity: 1; }
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
   .admin-layout { flex-direction: column; }
@@ -652,6 +799,9 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   .admin-nav-item { padding: 6px 10px; font-size: 12px; }
   .admin-nav-icon { display: none; }
   .admin-nav-scan { margin: 4px; padding: 7px 10px; font-size: 12px; }
+  .admin-sidebar-bottom { flex-direction: row; padding: 6px 8px; border-top: none; }
+  .admin-logout-btn { padding: 6px 10px; }
   .admin-main { padding: 16px; }
   .admin-stats { grid-template-columns: 1fr; }
+  .auth-card { padding: 28px 20px; }
 }

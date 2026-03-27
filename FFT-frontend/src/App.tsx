@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { api } from "./api";
+import { isLoggedIn } from "./auth";
 import type { AchievementItem } from "./types";
 import ScanPage from "./ScanPage";
 import ScannerPage from "./ScannerPage";
 import AdminPage from "./AdminPage";
+import LoginPage from "./LoginPage";
+import RegisterPage from "./RegisterPage";
 import AchievementToast from "./AchievementToast";
 
 if (!localStorage.getItem("fft_user_token")) {
@@ -28,6 +31,15 @@ function saveSeen(seen: Set<string>) {
 
 function achievementId(a: AchievementItem): string {
   return `${a.achievement_type}_${a.earned_at}`;
+}
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  return isLoggedIn() ? <>{children}</> : <Navigate to="/login" replace />;
+}
+
+function ScanPageRouted() {
+  const { qr_code } = useParams<{ qr_code: string }>();
+  return <ScanPage key={qr_code} />;
 }
 
 export default function App() {
@@ -61,10 +73,12 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/admin" replace />} />
-        <Route path="/scan/:qr_code" element={<ScanPage />} />
-        <Route path="/scanner" element={<ScannerPage />} />
-        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/" element={<Navigate to={isLoggedIn() ? "/admin" : "/login"} replace />} />
+        <Route path="/scan/:qr_code" element={<ProtectedRoute><ScanPageRouted /></ProtectedRoute>} />
+        <Route path="/scanner" element={<ProtectedRoute><ScannerPage /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
       </Routes>
       <AchievementToast achievement={pending} />
     </BrowserRouter>

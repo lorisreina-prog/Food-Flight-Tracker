@@ -15,6 +15,19 @@ const FORMATS = [
   Html5QrcodeSupportedFormats.PDF_417,
 ];
 
+const IconArrowLeft = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12" />
+    <polyline points="12 19 5 12 12 5" />
+  </svg>
+);
+
+const IconBarcode = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 5v14M8 5v14M13 5v14M18 5v14M21 5v14" />
+  </svg>
+);
+
 export default function ScannerPage() {
   const navigate = useNavigate();
   const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -33,10 +46,10 @@ export default function ScannerPage() {
     try {
       scanner = new Html5Qrcode(regionId, {
         formatsToSupport: FORMATS,
-        useBarCodeDetectorIfSupported: true, // native BarcodeDetector API — much faster
+        useBarCodeDetectorIfSupported: true,
         verbose: false,
       });
-    } catch (e) {
+    } catch {
       setStatus("error");
       setErrorMsg("Scanner konnte nicht initialisiert werden.");
       return;
@@ -48,18 +61,17 @@ export default function ScannerPage() {
       .start(
         { facingMode: "environment" },
         {
-          fps: 30,                                 // high fps → faster detection
-          qrbox: (w, h) => ({                      // dynamic: 90% width, 45% height
-            width:  Math.round(w * 0.9),
+          fps: 30,
+          qrbox: (w, h) => ({
+            width: Math.round(w * 0.9),
             height: Math.round(Math.min(h * 0.45, w * 0.4)),
           }),
-          aspectRatio: 1.7778,                     // 16:9 landscape stream
+          aspectRatio: 1.7778,
         },
         (decoded) => {
           if (firedRef.current) return;
           firedRef.current = true;
           scanner.stop().catch(() => {});
-          // Strip any URL prefix (e.g. "https://example.com/scan/QR-001")
           const parts = decoded.split("/");
           const code = parts[parts.length - 1].trim();
           navigate(`/scan/${encodeURIComponent(code)}`);
@@ -87,9 +99,16 @@ export default function ScannerPage() {
   return (
     <div className="scanner-page">
       <div className="scanner-header">
-        <Link to="/admin" className="scanner-back">← Zurück</Link>
-        <h2 className="scanner-title">Produkt scannen</h2>
+        <Link to="/admin" className="scanner-back">
+          <IconArrowLeft />
+          Zurück
+        </Link>
+        <div className="scanner-brand">
+          <img src="/logo.png" alt="EssensTracker" className="scanner-brand-img" />
+          <span className="scanner-brand-name">EssensTracker</span>
+        </div>
       </div>
+      <h2 className="scanner-title">Produkt scannen</h2>
 
       <div className="scanner-card">
         <div id="qr-reader-region" className="qr-reader-region" />
@@ -98,8 +117,7 @@ export default function ScannerPage() {
           {status === "starting" && "Kamera wird gestartet…"}
           {status === "active" && (
             <span>
-              Aktiv —{" "}
-              <strong>Barcode ruhig halten</strong>, parallel zur Kante ausrichten
+              Aktiv — <strong>Barcode ruhig halten</strong>, parallel zur Kante ausrichten
             </span>
           )}
           {status === "error" && errorMsg}
@@ -107,7 +125,7 @@ export default function ScannerPage() {
       </div>
 
       <div className="scanner-tip">
-        <span>📦</span>
+        <IconBarcode />
         <span>EAN-13 · EAN-8 · QR-Code · CODE-128 · UPC · PDF-417</span>
       </div>
 

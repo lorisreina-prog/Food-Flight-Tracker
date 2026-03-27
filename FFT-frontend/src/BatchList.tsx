@@ -11,12 +11,13 @@ const NUTRI_COLOR: Record<string, string> = {
 const TRUST_COLOR = (score: number) =>
   score < 40 ? "#DC2626" : score <= 70 ? "#D97706" : "#16A34A";
 
-export default function BatchList() {
+export default function BatchList({ onRefresh }: { onRefresh?: () => void }) {
   const [batches, setBatches] = useState<BatchListItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api.getBatches().then(setBatches).finally(() => setLoading(false));
+    onRefresh?.();
   }, []);
 
   if (loading) return <div className="skeleton-card" style={{ height: 200 }} />;
