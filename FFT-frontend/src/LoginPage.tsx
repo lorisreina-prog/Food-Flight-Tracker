@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { login } from "./auth";
 import Logo from "./Logo";
+import { useSettings } from "./SettingsContext";
+import { getT } from "./i18n";
 
 const IconInfo = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -36,6 +38,8 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { lang } = useSettings();
+  const tr = getT(lang);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,17 +70,17 @@ export default function LoginPage() {
         </div>
 
         <div className="auth-heading">
-          <h1>Willkommen zurück</h1>
-          <p>Melden Sie sich mit Ihrem Konto an.</p>
+          <h1>{tr.welcomeBack}</h1>
+          <p>{tr.signInDesc}</p>
         </div>
 
         <form onSubmit={handleLogin} className="auth-form">
           <div className="auth-field">
-            <label className="auth-label">E-Mail</label>
+            <label className="auth-label">{tr.emailLabel}</label>
             <input
               className="form-input"
               type="email"
-              placeholder="ihre@email.com"
+              placeholder={tr.emailPlaceholder}
               value={email}
               onChange={(e) => { setEmail(e.target.value); setError(""); }}
               autoFocus
@@ -86,12 +90,12 @@ export default function LoginPage() {
           </div>
 
           <div className="auth-field">
-            <label className="auth-label">Passwort</label>
+            <label className="auth-label">{tr.passwordLabel}</label>
             <div className="auth-password-wrap">
               <input
                 className="form-input auth-password-input"
                 type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
+                placeholder={tr.passwordPlaceholder}
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(""); }}
                 autoComplete="current-password"
@@ -116,14 +120,14 @@ export default function LoginPage() {
           )}
 
           <button className="btn-primary" type="submit" disabled={loading} style={{ marginTop: 4 }}>
-            {loading ? "Wird angemeldet…" : "Anmelden"}
+            {loading ? tr.signingIn : tr.signIn}
           </button>
         </form>
 
         <div className="auth-switch">
-          Noch kein Konto?{" "}
+          {tr.noAccount}{" "}
           <Link to="/register" className="auth-switch-link">
-            Konto erstellen
+            {tr.createAccountLink}
           </Link>
         </div>
       </div>

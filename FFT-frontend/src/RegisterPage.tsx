@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { register, login } from "./auth";
 import Logo from "./Logo";
+import { useSettings } from "./SettingsContext";
+import { getT } from "./i18n";
 
 const IconInfo = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -65,6 +67,8 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { lang } = useSettings();
+  const tr = getT(lang);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,17 +105,17 @@ export default function RegisterPage() {
         </div>
 
         <div className="auth-heading">
-          <h1>Konto erstellen</h1>
-          <p>Registrieren Sie sich, um FoodTrace zu nutzen.</p>
+          <h1>{tr.createAccount}</h1>
+          <p>{tr.registerDesc}</p>
         </div>
 
         <form onSubmit={handleRegister} className="auth-form">
           <div className="auth-field">
-            <label className="auth-label">E-Mail</label>
+            <label className="auth-label">{tr.emailLabel}</label>
             <input
               className="form-input"
               type="email"
-              placeholder="ihre@email.com"
+              placeholder={tr.emailPlaceholder}
               value={email}
               onChange={(e) => { setEmail(e.target.value); setError(""); }}
               autoFocus
@@ -124,12 +128,12 @@ export default function RegisterPage() {
           </div>
 
           <div className="auth-field">
-            <label className="auth-label">Passwort</label>
+            <label className="auth-label">{tr.passwordLabel}</label>
             <div className="auth-password-wrap">
               <input
                 className="form-input auth-password-input"
                 type={showPassword ? "text" : "password"}
-                placeholder="Sicheres Passwort wählen"
+                placeholder={tr.passwordLabel}
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(""); }}
                 autoComplete="new-password"
@@ -148,12 +152,12 @@ export default function RegisterPage() {
           </div>
 
           <div className="auth-field">
-            <label className="auth-label">Passwort bestätigen</label>
+            <label className="auth-label">{tr.confirmPassword}</label>
             <div className="auth-password-wrap">
               <input
                 className={`form-input auth-password-input ${confirmPassword && confirmPassword !== password ? "form-input--error" : ""}`}
                 type={showConfirm ? "text" : "password"}
-                placeholder="Passwort wiederholen"
+                placeholder={tr.confirmPasswordPlaceholder}
                 value={confirmPassword}
                 onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
                 autoComplete="new-password"
@@ -181,14 +185,14 @@ export default function RegisterPage() {
           )}
 
           <button className="btn-primary" type="submit" disabled={loading} style={{ marginTop: 4 }}>
-            {loading ? "Konto wird erstellt…" : "Konto erstellen"}
+            {loading ? tr.registering : tr.createAccount}
           </button>
         </form>
 
         <div className="auth-switch">
-          Bereits ein Konto?{" "}
+          {tr.haveAccount}{" "}
           <Link to="/login" className="auth-switch-link">
-            Anmelden
+            {tr.signInLink}
           </Link>
         </div>
       </div>

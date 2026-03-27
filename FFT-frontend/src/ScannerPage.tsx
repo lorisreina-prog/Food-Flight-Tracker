@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import Logo from "./Logo";
+import { useSettings } from "./SettingsContext";
+import { getT } from "./i18n";
 
 const FORMATS = [
   Html5QrcodeSupportedFormats.EAN_13,
@@ -29,6 +31,13 @@ const IconBarcode = () => (
   </svg>
 );
 
+const IconSettings = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+  </svg>
+);
+
 export default function ScannerPage() {
   const navigate = useNavigate();
   const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -36,6 +45,8 @@ export default function ScannerPage() {
   const [status, setStatus] = useState<"starting" | "active" | "error">("starting");
   const [errorMsg, setErrorMsg] = useState("");
   const [manualCode, setManualCode] = useState("");
+  const { lang, openPanel } = useSettings();
+  const tr = getT(lang);
 
   useEffect(() => {
     const regionId = "qr-reader-region";
@@ -106,23 +117,24 @@ export default function ScannerPage() {
       <div className="scanner-header">
         <Link to="/admin" className="scanner-back">
           <IconArrowLeft />
-          Zurück
+          {tr.back}
         </Link>
         <div className="scanner-brand">
           <Logo size={28} />
           <span className="scanner-brand-name">FoodTrace</span>
+          <button className="settings-gear-inline" style={{ marginLeft: 4 }} onClick={openPanel} aria-label={tr.settings}><IconSettings /></button>
         </div>
       </div>
-      <h2 className="scanner-title">Produkt scannen</h2>
+      <h2 className="scanner-title">{tr.scanTitle}</h2>
 
       <div className="scanner-card">
         <div id="qr-reader-region" className="qr-reader-region" />
         <div className="scanner-status">
           <span className={`scanner-dot ${status === "error" ? "scanner-error-dot" : ""}`} />
-          {status === "starting" && "Kamera wird gestartet…"}
+          {status === "starting" && tr.cameraStarting}
           {status === "active" && (
             <span>
-              Aktiv — <strong>Barcode ruhig halten</strong>, parallel zur Kante ausrichten
+              {tr.cameraActive}
             </span>
           )}
           {status === "error" && errorMsg}
@@ -136,12 +148,12 @@ export default function ScannerPage() {
 
       <div className="scanner-divider">
         <div className="scanner-divider-line" />
-        <span className="scanner-divider-text">oder manuell eingeben</span>
+        <span className="scanner-divider-text">{tr.orManual}</span>
         <div className="scanner-divider-line" />
       </div>
 
       <div className="scanner-manual">
-        <h3>Barcode-Nummer eingeben</h3>
+        <h3>{tr.manualEntry}</h3>
         <div className="scanner-manual-row">
           <input
             className="scanner-manual-input"
@@ -153,7 +165,7 @@ export default function ScannerPage() {
             autoComplete="off"
           />
           <button className="scanner-manual-btn" onClick={submitManual}>
-            Suchen
+            {tr.search}
           </button>
         </div>
       </div>

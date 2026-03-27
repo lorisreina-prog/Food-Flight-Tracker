@@ -9,6 +9,8 @@ import AdminPage from "./AdminPage";
 import LoginPage from "./LoginPage";
 import RegisterPage from "./RegisterPage";
 import AchievementToast from "./AchievementToast";
+import { SettingsProvider } from "./SettingsContext";
+import SettingsPanel from "./SettingsPanel";
 
 if (!localStorage.getItem("fft_user_token")) {
   localStorage.setItem("fft_user_token", crypto.randomUUID());
@@ -71,16 +73,19 @@ export default function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/" element={<Navigate to={isLoggedIn() ? "/admin" : "/login"} replace />} />
-        <Route path="/scan/:qr_code" element={<ProtectedRoute><ScanPageRouted /></ProtectedRoute>} />
-        <Route path="/scanner" element={<ProtectedRoute><ScannerPage /></ProtectedRoute>} />
-        <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
-      </Routes>
-      <AchievementToast achievement={pending} />
-    </BrowserRouter>
+    <SettingsProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/" element={<Navigate to={isLoggedIn() ? "/admin" : "/login"} replace />} />
+          <Route path="/scan/:qr_code" element={<ProtectedRoute><ScanPageRouted /></ProtectedRoute>} />
+          <Route path="/scanner" element={<ProtectedRoute><ScannerPage /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+        </Routes>
+        <AchievementToast achievement={pending} />
+        <SettingsPanel />
+      </BrowserRouter>
+    </SettingsProvider>
   );
 }
