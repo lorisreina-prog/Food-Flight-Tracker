@@ -24,28 +24,36 @@ const IconEyeOff = () => (
   </svg>
 );
 
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
-    setTimeout(() => {
-      const result = login(username, password);
-      setLoading(false);
-      if (result.ok) {
-        navigate("/admin");
-      } else {
-        setError(result.error);
-      }
-    }, 300);
+    if (!isValidEmail(email)) {
+      setError("Bitte eine gültige E-Mail-Adresse eingeben.");
+      return;
+    }
+
+    setLoading(true);
+    const result = await login(email, password);
+    setLoading(false);
+
+    if (result.ok) {
+      navigate("/admin");
+    } else {
+      setError(result.error);
+    }
   };
 
   return (
@@ -63,15 +71,15 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="auth-form">
           <div className="auth-field">
-            <label className="auth-label">Benutzername</label>
+            <label className="auth-label">E-Mail</label>
             <input
               className="form-input"
-              type="text"
-              placeholder="Ihren Benutzernamen eingeben"
-              value={username}
-              onChange={(e) => { setUsername(e.target.value); setError(""); }}
+              type="email"
+              placeholder="ihre@email.com"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setError(""); }}
               autoFocus
-              autoComplete="username"
+              autoComplete="email"
               disabled={loading}
             />
           </div>

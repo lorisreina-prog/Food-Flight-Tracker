@@ -30,6 +30,10 @@ const IconEyeOff = () => (
   </svg>
 );
 
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 function PasswordStrength({ password }: { password: string }) {
   if (!password) return null;
 
@@ -52,7 +56,7 @@ function PasswordStrength({ password }: { password: string }) {
 }
 
 export default function RegisterPage() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -61,9 +65,14 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!isValidEmail(email)) {
+      setError("Bitte eine gültige E-Mail-Adresse eingeben.");
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError("Die Passwörter stimmen nicht überein.");
@@ -71,18 +80,15 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
+    const result = await register(email, password);
+    if (!result.ok) {
+      setError(result.error);
+      setLoading(false);
+      return;
+    }
 
-    setTimeout(() => {
-      const result = register(username, password);
-      if (!result.ok) {
-        setError(result.error);
-        setLoading(false);
-        return;
-      }
-
-      login(username.trim().toLowerCase(), password);
-      navigate("/admin");
-    }, 300);
+    await login(email, password);
+    navigate("/admin");
   };
 
   return (
@@ -95,24 +101,24 @@ export default function RegisterPage() {
 
         <div className="auth-heading">
           <h1>Konto erstellen</h1>
-          <p>Registrieren Sie sich, um Provena zu nutzen.</p>
+          <p>Registrieren Sie sich, um EssensTracker zu nutzen.</p>
         </div>
 
         <form onSubmit={handleRegister} className="auth-form">
           <div className="auth-field">
-            <label className="auth-label">Benutzername</label>
+            <label className="auth-label">E-Mail</label>
             <input
               className="form-input"
-              type="text"
-              placeholder="Benutzernamen wählen"
-              value={username}
-              onChange={(e) => { setUsername(e.target.value); setError(""); }}
+              type="email"
+              placeholder="ihre@email.com"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setError(""); }}
               autoFocus
-              autoComplete="username"
+              autoComplete="email"
               disabled={loading}
             />
-            {username.trim().length > 0 && username.trim().length < 3 && (
-              <div className="auth-field-hint">Mindestens 3 Zeichen erforderlich</div>
+            {email.length > 0 && !isValidEmail(email) && (
+              <div className="auth-field-hint">Bitte eine gültige E-Mail-Adresse eingeben</div>
             )}
           </div>
 

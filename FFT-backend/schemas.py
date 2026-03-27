@@ -364,3 +364,12 @@ class OcrRequest(BaseModel):
 class OcrResponse(BaseModel):
     qr_code: str
     batch_id: int
+
+
+class AuthRequest(BaseModel):
+    email: str
+    password: str
+
+
+class AuthResponse(BaseModel):
+    email: str

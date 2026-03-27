@@ -1,6 +1,8 @@
 import base64
+import hashlib
 import io
 import json
+import os
 import random
 from datetime import datetime, timedelta
 
@@ -26,6 +28,7 @@ from schemas import (
     TrustScoreResponse, LeaderboardItem,
     CrowdRatingCreate, CrowdRatingCreated,
     AchievementItem, OcrRequest, OcrResponse,
+    AuthRequest, AuthResponse,
 )
 from qr import generate_qr, get_qr_image_path
 import ai as ai_module
@@ -931,3 +934,53 @@ def scan_ocr(body: OcrRequest, conn=Depends(db)):
         raise HTTPException(status_code=404, detail="no batch found in image")
 
     return OcrResponse(qr_code=qr_code, batch_id=row["batch_id"])
+
+
+def _hash_password(password: str) -> str:
+    salt = os.urandom(16)
+    key = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 200000)
+    return salt.hex() + ":" + key.hex()
+
+
+def _verify_password(password: str, stored: str) -> bool:
+    try:
+        salt_hex, key_hex = stored.split(":", 1)
+        salt = bytes.fromhex(salt_hex)
+        key = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 200000)
+        return key.hex() == key_hex
+    except Exception:
+        return False
+
+
+@router.post("/api/auth/register", response_model=AuthResponse)
+def auth_register(body: AuthRequest, conn=Depends(db)):
+    email = body.email.strip().lower()
+    if not email or "@" not in email or "." not in email.split("@")[-1]:
+        raise HTTPException(status_code=400, detail="Ungültige E-Mail-Adresse.")
+    if len(body.password) < 6:
+        raise HTTPException(status_code=400, detail="Passwort muss mindestens 6 Zeichen lang sein.")
+
+    c = conn.cursor()
+    c.execute("SELECT user_id FROM app_user WHERE email=%s", (email,))
+    if c.fetchone():
+        raise HTTPException(status_code=409, detail="Diese E-Mail-Adresse ist bereits registriert.")
+
+    password_hash = _hash_password(body.password)
+    created_at = datetime.utcnow().isoformat()
+    c.execute(
+        "INSERT INTO app_user (email, password_hash, created_at) VALUES (%s,%s,%s)",
+        (email, password_hash, created_at),
+    )
+    conn.commit()
+    return AuthResponse(email=email)
+
+
+@router.post("/api/auth/login", response_model=AuthResponse)
+def auth_login(body: AuthRequest, conn=Depends(db)):
+    email = body.email.strip().lower()
+    c = conn.cursor()
+    c.execute("SELECT password_hash FROM app_user WHERE email=%s", (email,))
+    row = c.fetchone()
+    if not row or not _verify_password(body.password, row["password_hash"]):
+        raise HTTPException(status_code=401, detail="E-Mail oder Passwort ist falsch.")
+    return AuthResponse(email=email)

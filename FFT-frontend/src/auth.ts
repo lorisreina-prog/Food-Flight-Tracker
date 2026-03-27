@@ -1,50 +1,35 @@
-interface Account {
-  username: string;
-  password: string;
-  createdAt: string;
-}
-
-const ACCOUNTS_KEY = "fft_accounts";
+const BASE = import.meta.env.VITE_API_URL ?? "";
 const SESSION_KEY = "fft_auth";
 
-function loadAccounts(): Account[] {
+async function apiPost(path: string, body: object): Promise<{ ok: boolean; email?: string; error?: string }> {
   try {
-    const raw = localStorage.getItem(ACCOUNTS_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const res = await fetch(`${BASE}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return { ok: true, email: data.email };
+    }
+    const err = await res.json().catch(() => ({ detail: "Unbekannter Fehler." }));
+    return { ok: false, error: err.detail ?? "Unbekannter Fehler." };
   } catch {
-    return [];
+    return { ok: false, error: "Server nicht erreichbar." };
   }
 }
 
-function saveAccounts(accounts: Account[]) {
-  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
-}
-
-export function register(username: string, password: string): { ok: true } | { ok: false; error: string } {
-  const trimmed = username.trim().toLowerCase();
-  if (trimmed.length < 3) return { ok: false, error: "Benutzername muss mindestens 3 Zeichen lang sein." };
-  if (password.length < 6) return { ok: false, error: "Passwort muss mindestens 6 Zeichen lang sein." };
-
-  const accounts = loadAccounts();
-  if (accounts.some((a) => a.username === trimmed)) {
-    return { ok: false, error: "Dieser Benutzername ist bereits vergeben." };
-  }
-
-  accounts.push({ username: trimmed, password, createdAt: new Date().toISOString() });
-  saveAccounts(accounts);
+export async function register(email: string, password: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const result = await apiPost("/api/auth/register", { email, password });
+  if (!result.ok) return { ok: false, error: result.error! };
   return { ok: true };
 }
 
-export function login(username: string, password: string): { ok: true; username: string } | { ok: false; error: string } {
-  const trimmed = username.trim().toLowerCase();
-  if (!trimmed || !password) return { ok: false, error: "Bitte alle Felder ausfüllen." };
-
-  const accounts = loadAccounts();
-  const account = accounts.find((a) => a.username === trimmed && a.password === password);
-  if (!account) return { ok: false, error: "Benutzername oder Passwort ist falsch." };
-
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ username: account.username, loggedIn: true }));
-  return { ok: true, username: account.username };
+export async function login(email: string, password: string): Promise<{ ok: true; email: string } | { ok: false; error: string }> {
+  const result = await apiPost("/api/auth/login", { email, password });
+  if (!result.ok) return { ok: false, error: result.error! };
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ email: result.email, loggedIn: true }));
+  return { ok: true, email: result.email! };
 }
 
 export function logout() {
@@ -60,17 +45,13 @@ export function isLoggedIn(): boolean {
   }
 }
 
-export function getSession(): { username: string } | null {
+export function getSession(): { email: string } | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    return parsed.loggedIn ? { username: parsed.username } : null;
+    return parsed.loggedIn ? { email: parsed.email } : null;
   } catch {
     return null;
   }
-}
-
-export function hasAnyAccount(): boolean {
-  return loadAccounts().length > 0;
 }

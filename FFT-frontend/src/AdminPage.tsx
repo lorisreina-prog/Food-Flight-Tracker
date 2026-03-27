@@ -121,7 +121,7 @@ export default function AdminPage() {
     navigate("/login");
   };
 
-  const authUser = getSession()?.username ?? "Admin";
+  const authUser = getSession()?.email ?? "Admin";
 
   return (
     <div className="admin-layout">

@@ -218,6 +218,14 @@ def init_db():
             trust_score INTEGER NULL
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS app_user (
+            user_id SERIAL PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    """)
     conn.commit()
     conn.close()
 
