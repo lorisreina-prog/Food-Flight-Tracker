@@ -75,11 +75,19 @@ export const api = {
     reporter_email: string,
     description: string,
     category: string,
+    user_token?: string,
   ) =>
     req<unknown>(`/api/batch/${batchId}/complaint`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reporter_name, reporter_email, description, category }),
+      body: JSON.stringify({ reporter_name, reporter_email, description, category, user_token }),
+    }),
+
+  registerScan: (qrCode: string, userToken: string) =>
+    req<{ batch_id: number; qr_code: string; already_registered: boolean }>("/api/scan/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ qr_code: qrCode, user_token: userToken }),
     }),
 
   sendChat: (batchId: number, message: string, sessionId: string) =>

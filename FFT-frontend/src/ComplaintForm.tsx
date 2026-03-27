@@ -3,6 +3,7 @@ import { api } from "./api";
 
 interface Props {
   batchId: number;
+  userToken?: string;
 }
 
 const CATEGORIES = ["Qualität", "Sicherheit", "Allergene", "Verpackung", "Kennzeichnung", "Sonstiges"];
@@ -33,7 +34,7 @@ const SvgChevronDown = () => (
   </svg>
 );
 
-export default function ComplaintForm({ batchId }: Props) {
+export default function ComplaintForm({ batchId, userToken }: Props) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -50,7 +51,7 @@ export default function ComplaintForm({ batchId }: Props) {
     }
     setError("");
     try {
-      await api.submitComplaint(batchId, name, email, description, category);
+      await api.submitComplaint(batchId, name, email, description, category, userToken);
       setSubmitted(true);
     } catch (err: any) {
       if (err?.status === 429) setError("Zu viele Beanstandungen. Bitte später erneut versuchen.");

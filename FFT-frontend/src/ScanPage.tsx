@@ -15,7 +15,6 @@ import Co2Display from "./Co2Display";
 import CertificateBadges from "./CertificateBadges";
 import ChatAssistant from "./ChatAssistant";
 import CrowdRating from "./CrowdRating";
-import AchievementToast from "./AchievementToast";
 import ComplaintForm from "./ComplaintForm";
 
 const TRUST_COLOR = (s: number) => s < 40 ? "#DC2626" : s <= 70 ? "#D97706" : "#059669";
@@ -313,7 +312,10 @@ export default function ScanPage() {
     setConnError(false);
 
     api.getBatch(decoded)
-      .then(setBatch)
+      .then((data) => {
+        setBatch(data);
+        api.registerScan(decoded, userToken).catch(() => {});
+      })
       .catch(async (err: any) => {
         if (err?.status === 404) {
           if (/^\d{6,14}$/.test(decoded)) {
@@ -414,8 +416,7 @@ export default function ScanPage() {
       <CertificateBadges certificates={batch.certificates} />
       <ChatAssistant batchId={batch.batch_id} sessionId={sessionId} />
       <CrowdRating batchId={batch.batch_id} userToken={userToken} />
-      <ComplaintForm batchId={batch.batch_id} />
-      <AchievementToast userToken={userToken} batchId={batch.batch_id} />
+      <ComplaintForm batchId={batch.batch_id} userToken={userToken} />
 
       <Link to="/scanner" className="scan-fab">
         <IconCamera />

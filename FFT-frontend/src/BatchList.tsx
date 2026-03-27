@@ -17,7 +17,6 @@ export default function BatchList({ onRefresh }: { onRefresh?: () => void }) {
 
   useEffect(() => {
     api.getBatches().then(setBatches).finally(() => setLoading(false));
-    onRefresh?.();
   }, []);
 
   if (loading) return <div className="skeleton-card" style={{ height: 200 }} />;

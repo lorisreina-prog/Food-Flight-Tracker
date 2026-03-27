@@ -41,13 +41,13 @@ const SvgSend = () => (
   </svg>
 );
 
-export default function ChatAssistant({ batch_id, batchId, product_name }: Props) {
+export default function ChatAssistant({ batch_id, batchId, product_name, sessionId: sessionIdProp }: Props) {
   const resolvedId = batch_id ?? batchId ?? 0;
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const sessionId = useRef(crypto.randomUUID());
+  const sessionId = useRef(sessionIdProp ?? crypto.randomUUID());
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
