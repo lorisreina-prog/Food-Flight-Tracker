@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
+import Logo from "./Logo";
 
 const FORMATS = [
   Html5QrcodeSupportedFormats.EAN_13,
@@ -108,8 +109,8 @@ export default function ScannerPage() {
           Zurück
         </Link>
         <div className="scanner-brand">
-          <img src="/logo.png" alt="EssensTracker" className="scanner-brand-img" />
-          <span className="scanner-brand-name">EssensTracker</span>
+          <Logo size={28} />
+          <span className="scanner-brand-name">FoodTrace</span>
         </div>
       </div>
       <h2 className="scanner-title">Produkt scannen</h2>

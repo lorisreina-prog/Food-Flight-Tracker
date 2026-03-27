@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api } from "./api";
+import Logo from "./Logo";
 import type { BatchDetail } from "./types";
 import { formatDate } from "./types";
 import RecallBanner from "./RecallBanner";
@@ -113,8 +114,8 @@ function ExternalProduct({ product, barcode }: { product: OFFProduct; barcode: s
     <div className="scan-page">
       <div className="scan-topbar">
         <div className="scan-topbar-logo">
-          <img src="/logo.png" alt="EssensTracker" className="scan-topbar-logo-img" />
-          ESSENSTRACKER
+          <Logo size={24} />
+          FOODTRACE
         </div>
         <Link to="/scanner" className="scan-topbar-action">
           <IconCamera />
@@ -268,13 +269,17 @@ function ExternalProduct({ product, barcode }: { product: OFFProduct; barcode: s
   );
 }
 
+const SvgStar = ({ filled }: { filled: boolean }) => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill={filled ? "#F59E0B" : "none"} stroke={filled ? "#F59E0B" : "#D1D5DB"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+
 function StarRow({ score }: { score: number }) {
   const full = Math.round(score);
   return (
     <span className="star-row">
-      {[1,2,3,4,5].map((s) => (
-        <span key={s} style={{ color: s <= full ? "#F59E0B" : "#D1D5DB", fontSize: 17 }}>★</span>
-      ))}
+      {[1,2,3,4,5].map((s) => <SvgStar key={s} filled={s <= full} />)}
       <span className="crowd-score-val">{score.toFixed(1)}</span>
     </span>
   );
@@ -366,8 +371,8 @@ export default function ScanPage() {
     <div className="scan-page">
       <div className="scan-topbar">
         <div className="scan-topbar-logo">
-          <img src="/logo.png" alt="EssensTracker" className="scan-topbar-logo-img" />
-          ESSENSTRACKER
+          <Logo size={24} />
+          FOODTRACE
         </div>
         <Link to="/admin" className="scan-topbar-action">
           Dashboard

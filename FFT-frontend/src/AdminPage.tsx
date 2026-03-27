@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "./api";
 import { logout, getSession } from "./auth";
+import Logo from "./Logo";
 import type { ActiveRecall, BatchListItem } from "./types";
 import { formatDate } from "./types";
 import BatchList from "./BatchList";
@@ -128,8 +129,8 @@ export default function AdminPage() {
       <aside className="admin-sidebar">
         <div className="admin-sidebar-top">
           <div className="admin-logo">
-            <img src="/logo.png" alt="EssensTracker" className="admin-logo-img" />
-            EssensTracker
+            <Logo size={30} />
+            FoodTrace
           </div>
           <div className="admin-tagline">{authUser}</div>
         </div>

@@ -6,6 +6,17 @@ interface Props {
   userToken: string;
 }
 
+const SvgStar = ({ filled, hovered }: { filled: boolean; hovered: boolean }) => (
+  <svg width="30" height="30" viewBox="0 0 24 24"
+    fill={filled || hovered ? "#F59E0B" : "none"}
+    stroke={filled || hovered ? "#F59E0B" : "#C8E6D4"}
+    strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
+    style={{ transition: "fill .1s, stroke .1s, transform .1s", transform: filled || hovered ? "scale(1.1)" : "scale(1)", display: "block" }}
+  >
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+
 const SvgCheckCircle = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
@@ -68,18 +79,12 @@ export default function CrowdRating({ batchId, userToken }: Props) {
         {[1,2,3,4,5].map((s) => (
           <span
             key={s}
-            style={{
-              color: s <= active ? "#F59E0B" : "#D1D5DB",
-              cursor: "pointer", fontSize: 32,
-              transition: "color .1s, transform .1s",
-              transform: s <= active ? "scale(1.1)" : "scale(1)",
-              display: "inline-block",
-            }}
+            style={{ cursor: "pointer", display: "inline-flex" }}
             onMouseEnter={() => setHover(s)}
             onMouseLeave={() => setHover(0)}
             onClick={() => setStars(s)}
           >
-            ★
+            <SvgStar filled={s <= stars} hovered={s <= hover && s > stars} />
           </span>
         ))}
       </div>

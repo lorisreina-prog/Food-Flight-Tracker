@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { register, login } from "./auth";
+import Logo from "./Logo";
 
 const IconInfo = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -95,13 +96,13 @@ export default function RegisterPage() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-brand">
-          <img src="/logo.png" alt="EssensTracker" className="auth-logo-img" />
-          <span className="auth-brand-name">EssensTracker</span>
+          <Logo size={44} />
+          <span className="auth-brand-name">FoodTrace</span>
         </div>
 
         <div className="auth-heading">
           <h1>Konto erstellen</h1>
-          <p>Registrieren Sie sich, um EssensTracker zu nutzen.</p>
+          <p>Registrieren Sie sich, um FoodTrace zu nutzen.</p>
         </div>
 
         <form onSubmit={handleRegister} className="auth-form">
