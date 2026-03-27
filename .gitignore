@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.local
+FFT-backend/fft.db
+FFT-backend/qr_images/
+FFT-frontend/node_modules/
+FFT-frontend/dist/
+FFT-frontend/.env
+FFT-frontend/.env.local
