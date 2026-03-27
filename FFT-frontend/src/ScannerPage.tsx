@@ -71,10 +71,12 @@ export default function ScannerPage() {
         (decoded) => {
           if (firedRef.current) return;
           firedRef.current = true;
-          scanner.stop().catch(() => {});
           const parts = decoded.split("/");
           const code = parts[parts.length - 1].trim();
-          setTimeout(() => navigate(`/scan/${encodeURIComponent(code)}`), 0);
+          scanner
+            .stop()
+            .catch(() => {})
+            .finally(() => navigate(`/scan/${encodeURIComponent(code)}`));
         },
         () => {}
       )
@@ -86,7 +88,9 @@ export default function ScannerPage() {
       });
 
     return () => {
-      scanner.stop().catch(() => {});
+      if (!firedRef.current) {
+        scanner.stop().catch(() => {});
+      }
     };
   }, []);
 
