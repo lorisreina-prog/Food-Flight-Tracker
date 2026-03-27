@@ -24,7 +24,7 @@ def seed_data():
         ("Migros Bern", "retailer", "Bern, BE", "Migros Genossenschaft"),
     ]
     for s in stations:
-        c.execute("INSERT INTO station (name, type, location, operator) VALUES (?,?,?,?)", s)
+        c.execute("INSERT INTO station (name, type, location, operator) VALUES (%s,%s,%s,%s)", s)
     conn.commit()
 
     batches = [
@@ -34,7 +34,7 @@ def seed_data():
     ]
     for b in batches:
         c.execute(
-            "INSERT INTO batch (product_name, product_category, origin_farm, origin_country, harvest_date, qr_code, created_at) VALUES (?,?,?,?,?,?,?)",
+            "INSERT INTO batch (product_name, product_category, origin_farm, origin_country, harvest_date, qr_code, created_at) VALUES (%s,%s,%s,%s,%s,%s,%s)",
             (*b, "2026-03-10T08:00:00")
         )
     conn.commit()
@@ -64,7 +64,7 @@ def seed_data():
     ]
     for e in events:
         c.execute(
-            "INSERT INTO batch_event (batch_id, station_id, event_type, timestamp, notes, temp_celsius, co2_kg) VALUES (?,?,?,?,?,?,?)",
+            "INSERT INTO batch_event (batch_id, station_id, event_type, timestamp, notes, temp_celsius, co2_kg) VALUES (%s,%s,%s,%s,%s,%s,%s)",
             e
         )
     conn.commit()
@@ -75,13 +75,13 @@ def seed_data():
     ]
     for r in recalls:
         c.execute(
-            "INSERT INTO recall (batch_id, reason, severity, issued_at, resolved_at, issued_by) VALUES (?,?,?,?,?,?)",
+            "INSERT INTO recall (batch_id, reason, severity, issued_at, resolved_at, issued_by) VALUES (%s,%s,%s,%s,%s,%s)",
             r
         )
     conn.commit()
 
     c.execute(
-        "INSERT INTO batch_event (batch_id, station_id, event_type, timestamp, notes, temp_celsius, co2_kg) VALUES (?,NULL,'recalled',?,?,NULL,NULL)",
+        "INSERT INTO batch_event (batch_id, station_id, event_type, timestamp, notes, temp_celsius, co2_kg) VALUES (%s,NULL,'recalled',%s,%s,NULL,NULL)",
         (1, "2026-03-08T10:00:00", "Listerien-Verdacht bei Charge vom 10.02.2026")
     )
     conn.commit()
@@ -93,10 +93,10 @@ def seed_data():
     ]
     for comp in complaints:
         c.execute(
-            "INSERT INTO complaint (batch_id, reporter_name, reporter_email, description, category, submitted_at, status) VALUES (?,?,?,?,?,?,?)",
+            "INSERT INTO complaint (batch_id, reporter_name, reporter_email, description, category, submitted_at, status) VALUES (%s,%s,%s,%s,%s,%s,%s)",
             comp
         )
-        c.execute("INSERT INTO complaint_rate_limit (batch_id, submitted_at) VALUES (?,?)", (comp[0], comp[5]))
+        c.execute("INSERT INTO complaint_rate_limit (batch_id, submitted_at) VALUES (%s,%s)", (comp[0], comp[5]))
     conn.commit()
 
     certs = [
@@ -104,7 +104,7 @@ def seed_data():
         (2, "fairtrade", "Fairtrade International", "2027-06-30", 1),
     ]
     for cert in certs:
-        c.execute("INSERT INTO certificate (batch_id, cert_type, issued_by, valid_until, verified) VALUES (?,?,?,?,?)", cert)
+        c.execute("INSERT INTO certificate (batch_id, cert_type, issued_by, valid_until, verified) VALUES (%s,%s,%s,%s,%s)", cert)
     conn.commit()
 
     quality_checks = [
@@ -115,7 +115,7 @@ def seed_data():
         (3, 5, "2026-03-22T10:00:00", 1, "Endkontrolle bestanden"),
     ]
     for qc in quality_checks:
-        c.execute("INSERT INTO quality_check (batch_id, station_id, checked_at, passed, notes) VALUES (?,?,?,?,?)", qc)
+        c.execute("INSERT INTO quality_check (batch_id, station_id, checked_at, passed, notes) VALUES (%s,%s,%s,%s,%s)", qc)
     conn.commit()
 
     cold_chain = [
@@ -127,7 +127,7 @@ def seed_data():
         (3, 4, "2026-03-20T07:00:00", 7.5, 6.0, 10.0, 1),
     ]
     for cl in cold_chain:
-        c.execute("INSERT INTO cold_chain_log (batch_id, station_id, recorded_at, temp_celsius, min_temp, max_temp, within_range) VALUES (?,?,?,?,?,?,?)", cl)
+        c.execute("INSERT INTO cold_chain_log (batch_id, station_id, recorded_at, temp_celsius, min_temp, max_temp, within_range) VALUES (%s,%s,%s,%s,%s,%s,%s)", cl)
     conn.commit()
 
     iot_readings = [
@@ -139,7 +139,7 @@ def seed_data():
         (3, 5, "humidity",    55.0, "2026-03-22T12:00:00"),
     ]
     for ir in iot_readings:
-        c.execute("INSERT INTO iot_reading (batch_id, station_id, sensor_type, value, recorded_at) VALUES (?,?,?,?,?)", ir)
+        c.execute("INSERT INTO iot_reading (batch_id, station_id, sensor_type, value, recorded_at) VALUES (%s,%s,%s,%s,%s)", ir)
     conn.commit()
 
     risk_predictions = [
@@ -158,7 +158,7 @@ def seed_data():
     ]
     for rp in risk_predictions:
         c.execute(
-            "INSERT INTO risk_prediction (batch_id, risk_score, risk_level, risk_factors, ai_explanation, shelf_life_days, predicted_at) VALUES (?,?,?,?,?,?,?)",
+            "INSERT INTO risk_prediction (batch_id, risk_score, risk_level, risk_factors, ai_explanation, shelf_life_days, predicted_at) VALUES (%s,%s,%s,%s,%s,%s,%s)",
             rp
         )
     conn.commit()
@@ -175,7 +175,7 @@ def seed_data():
         salt = ns[5]
         grade = compute_nutri_grade(sugar, sat_fat, salt)
         c.execute(
-            "INSERT INTO nutri_score (batch_id, energy_kcal, fat_g, saturated_fat_g, sugar_g, salt_g, fiber_g, protein_g, grade, computed_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO nutri_score (batch_id, energy_kcal, fat_g, saturated_fat_g, sugar_g, salt_g, fiber_g, protein_g, grade, computed_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
             (bid, ns[1], ns[2], ns[3], ns[4], ns[5], ns[6], ns[7], grade, ns[8])
         )
     conn.commit()
@@ -186,7 +186,7 @@ def seed_data():
     ]
     for ef in eco_footprints:
         c.execute(
-            "INSERT INTO ecological_footprint (batch_id, co2_total_kg, water_liters, land_sqm, transport_km, computed_at) VALUES (?,?,?,?,?,?)",
+            "INSERT INTO ecological_footprint (batch_id, co2_total_kg, water_liters, land_sqm, transport_km, computed_at) VALUES (%s,%s,%s,%s,%s,%s)",
             ef
         )
     conn.commit()
@@ -202,7 +202,7 @@ def seed_data():
         (3, "retail",     0.57, 40.0, None),
     ]
     for pb in price_breakdowns:
-        c.execute("INSERT INTO price_breakdown (batch_id, stage, cost_chf, margin_pct, notes) VALUES (?,?,?,?,?)", pb)
+        c.execute("INSERT INTO price_breakdown (batch_id, stage, cost_chf, margin_pct, notes) VALUES (%s,%s,%s,%s,%s)", pb)
     conn.commit()
 
     for bid in [1, 2, 3]:
@@ -214,7 +214,7 @@ def seed_data():
         (3, 4, "Erfrischend und sauber", "demo-user-001", "2026-03-23T10:00:00"),
     ]
     for cr in crowd_ratings:
-        c.execute("INSERT INTO crowd_rating (batch_id, stars, comment, user_token, submitted_at) VALUES (?,?,?,?,?)", cr)
+        c.execute("INSERT INTO crowd_rating (batch_id, stars, comment, user_token, submitted_at) VALUES (%s,%s,%s,%s,%s)", cr)
     conn.commit()
 
     achievements = [
@@ -222,7 +222,7 @@ def seed_data():
         ("demo-user-001", "explorer",   "2026-03-23T10:30:00", None),
     ]
     for ach in achievements:
-        c.execute("INSERT INTO achievement (user_token, achievement_type, earned_at, batch_id) VALUES (?,?,?,?)", ach)
+        c.execute("INSERT INTO achievement (user_token, achievement_type, earned_at, batch_id) VALUES (%s,%s,%s,%s)", ach)
     conn.commit()
 
     alternatives = [
@@ -230,7 +230,7 @@ def seed_data():
         (1, "Appenzeller", "Keine aktiven Rückrufe, lokal produziert",         1.8, "D", 75),
     ]
     for alt in alternatives:
-        c.execute("INSERT INTO alternative_product (batch_id, product_name, reason, co2_kg, nutri_grade, trust_score) VALUES (?,?,?,?,?,?)", alt)
+        c.execute("INSERT INTO alternative_product (batch_id, product_name, reason, co2_kg, nutri_grade, trust_score) VALUES (%s,%s,%s,%s,%s,%s)", alt)
     conn.commit()
 
     conn.close()
