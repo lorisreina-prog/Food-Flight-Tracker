@@ -24,6 +24,7 @@ def init_db():
             origin_country TEXT NOT NULL,
             harvest_date TEXT NOT NULL,
             qr_code TEXT UNIQUE NOT NULL,
+            batch_code TEXT UNIQUE NULL,
             created_at TEXT NOT NULL
         )
     """)
@@ -236,6 +237,7 @@ def init_db():
         )
     """)
     c.execute("ALTER TABLE complaint ADD COLUMN IF NOT EXISTS user_token TEXT NULL")
+    c.execute("ALTER TABLE batch ADD COLUMN IF NOT EXISTS batch_code TEXT UNIQUE NULL")
     conn.commit()
     conn.close()
 

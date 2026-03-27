@@ -114,6 +114,11 @@ def _score_to_level(score: int) -> str:
     return "critical"
 
 
+def _lookup_batch_by_code(c, code: str):
+    c.execute("SELECT * FROM batch WHERE qr_code=%s OR batch_code=%s", (code, code))
+    return c.fetchone()
+
+
 @router.get("/api/batches", response_model=list[BatchListItem])
 def list_batches(conn=Depends(db)):
     c = conn.cursor()
@@ -131,6 +136,7 @@ def list_batches(conn=Depends(db)):
             batch_id=bid,
             product_name=b["product_name"],
             qr_code=b["qr_code"],
+            batch_code=b["batch_code"],
             origin_country=b["origin_country"],
             harvest_date=b["harvest_date"],
             recall_status=status,
@@ -144,8 +150,7 @@ def list_batches(conn=Depends(db)):
 @router.get("/api/batch/{qr_code}", response_model=BatchDetail)
 def get_batch(qr_code: str, conn=Depends(db)):
     c = conn.cursor()
-    c.execute("SELECT * FROM batch WHERE qr_code=%s", (qr_code,))
-    b = c.fetchone()
+    b = _lookup_batch_by_code(c, qr_code)
     if not b:
         raise HTTPException(status_code=404, detail="batch not found")
     bid = b["batch_id"]
@@ -208,6 +213,7 @@ def get_batch(qr_code: str, conn=Depends(db)):
         origin_country=b["origin_country"],
         harvest_date=b["harvest_date"],
         qr_code=b["qr_code"],
+        batch_code=b["batch_code"],
         recall_status=status,
         trust_score=ts_row["score"] if ts_row else None,
         nutri_grade=ns_row["grade"] if ns_row else None,
@@ -267,13 +273,13 @@ def create_batch(body: BatchCreate, conn=Depends(db)):
     now = now_iso()
     c = conn.cursor()
     c.execute(
-        "INSERT INTO batch (product_name, product_category, origin_farm, origin_country, harvest_date, qr_code, created_at) VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING batch_id",
-        (body.product_name, body.product_category, body.origin_farm, body.origin_country, body.harvest_date, qr_code, now)
+        "INSERT INTO batch (product_name, product_category, origin_farm, origin_country, harvest_date, qr_code, batch_code, created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING batch_id",
+        (body.product_name, body.product_category, body.origin_farm, body.origin_country, body.harvest_date, qr_code, body.batch_code or None, now)
     )
     batch_id = c.fetchone()["batch_id"]
     conn.commit()
     generate_qr(batch_id, qr_code)
-    return BatchCreated(batch_id=batch_id, qr_code=qr_code, qr_image_url=f"/qr_images/{qr_code}.png")
+    return BatchCreated(batch_id=batch_id, qr_code=qr_code, batch_code=body.batch_code, qr_image_url=f"/qr_images/{qr_code}.png")
 
 
 @router.post("/api/batch/{batch_id}/event", response_model=EventCreated, status_code=201)
@@ -923,15 +929,14 @@ def scan_ocr(body: OcrRequest, conn=Depends(db)):
     qr_value = decoded[0].data.decode("utf-8")
     parsed = urlparse(qr_value)
     path_parts = parsed.path.strip("/").split("/")
-    qr_code = path_parts[-1] if path_parts else qr_value
+    code = path_parts[-1] if path_parts else qr_value
 
     c = conn.cursor()
-    c.execute("SELECT batch_id FROM batch WHERE qr_code=%s", (qr_code,))
-    row = c.fetchone()
-    if not row:
+    b = _lookup_batch_by_code(c, code)
+    if not b:
         raise HTTPException(status_code=404, detail="no batch found in image")
 
-    found_batch_id = row["batch_id"]
+    found_batch_id = b["batch_id"]
     if body.user_token:
         five_min_ago = (datetime.utcnow() - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%S")
         c.execute(
@@ -946,31 +951,32 @@ def scan_ocr(body: OcrRequest, conn=Depends(db)):
             conn.commit()
             award_achievements(conn, body.user_token, "scan", found_batch_id)
 
-    return OcrResponse(qr_code=qr_code, batch_id=found_batch_id)
+    return OcrResponse(qr_code=b["qr_code"], batch_id=found_batch_id)
 
 
 @router.post("/api/scan/register", response_model=ScanRegisterResponse, status_code=201)
 def register_scan(body: ScanRegisterRequest, conn=Depends(db)):
+    if not body.user_token or not body.user_token.strip():
+        raise HTTPException(status_code=400, detail="user_token is required")
     c = conn.cursor()
-    c.execute("SELECT batch_id FROM batch WHERE qr_code=%s", (body.qr_code,))
-    row = c.fetchone()
-    if not row:
+    b = _lookup_batch_by_code(c, body.qr_code)
+    if not b:
         raise HTTPException(status_code=404, detail="batch not found")
-    batch_id = row["batch_id"]
+    batch_id = b["batch_id"]
     five_min_ago = (datetime.utcnow() - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%S")
     c.execute(
         "SELECT scan_id FROM scan_event WHERE user_token=%s AND batch_id=%s AND scanned_at > %s",
         (body.user_token, batch_id, five_min_ago)
     )
     if c.fetchone():
-        return ScanRegisterResponse(batch_id=batch_id, qr_code=body.qr_code, already_registered=True)
+        return ScanRegisterResponse(batch_id=batch_id, qr_code=b["qr_code"], already_registered=True)
     c.execute(
         "INSERT INTO scan_event (user_token, batch_id, scanned_at) VALUES (%s,%s,%s)",
         (body.user_token, batch_id, now_iso())
     )
     conn.commit()
     award_achievements(conn, body.user_token, "scan", batch_id)
-    return ScanRegisterResponse(batch_id=batch_id, qr_code=body.qr_code, already_registered=False)
+    return ScanRegisterResponse(batch_id=batch_id, qr_code=b["qr_code"], already_registered=False)
 
 
 def _hash_password(password: str) -> str:

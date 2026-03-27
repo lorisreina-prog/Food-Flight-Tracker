@@ -48,6 +48,7 @@ class BatchDetail(BaseModel):
     origin_country: str
     harvest_date: str
     qr_code: str
+    batch_code: Optional[str]
     recall_status: str
     trust_score: Optional[int]
     nutri_grade: Optional[str]
@@ -66,6 +67,7 @@ class BatchListItem(BaseModel):
     batch_id: int
     product_name: str
     qr_code: str
+    batch_code: Optional[str]
     origin_country: str
     harvest_date: str
     recall_status: str
@@ -80,11 +82,13 @@ class BatchCreate(BaseModel):
     origin_farm: str
     origin_country: str
     harvest_date: str
+    batch_code: Optional[str] = None
 
 
 class BatchCreated(BaseModel):
     batch_id: int
     qr_code: str
+    batch_code: Optional[str]
     qr_image_url: str
 
 

@@ -28,13 +28,13 @@ def seed_data():
     conn.commit()
 
     batches = [
-        ("Emmentaler AOP", "Käse", "Hof Müller", "Schweiz", "2026-02-10", "FFT-BATCH-001"),
-        ("Demeter Karotten", "Gemüse", "Biohof Stern", "Schweiz", "2026-03-01", "FFT-BATCH-002"),
-        ("Valser Mineralwasser", "Getränke", "Valser Quellen", "Schweiz", "2026-03-15", "FFT-BATCH-003"),
+        ("Emmentaler AOP", "Käse", "Hof Müller", "Schweiz", "2026-02-10", "FFT-BATCH-001", "LOT-2026-0210-E1"),
+        ("Demeter Karotten", "Gemüse", "Biohof Stern", "Schweiz", "2026-03-01", "FFT-BATCH-002", "LOT-2026-0301-K2"),
+        ("Valser Mineralwasser", "Getränke", "Valser Quellen", "Schweiz", "2026-03-15", "FFT-BATCH-003", "LOT-2026-0315-W3"),
     ]
     for b in batches:
         c.execute(
-            "INSERT INTO batch (product_name, product_category, origin_farm, origin_country, harvest_date, qr_code, created_at) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+            "INSERT INTO batch (product_name, product_category, origin_farm, origin_country, harvest_date, qr_code, batch_code, created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
             (*b, "2026-03-10T08:00:00")
         )
     conn.commit()

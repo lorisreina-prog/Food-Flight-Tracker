@@ -335,7 +335,7 @@ export default function ScanPage() {
     api.getBatch(decoded)
       .then((data) => {
         setBatch(data);
-        api.registerScan(decoded, userToken).catch(() => {});
+        if (userToken) api.registerScan(decoded, userToken).catch(() => {});
       })
       .catch(async (err: any) => {
         if (err?.status === 404) {

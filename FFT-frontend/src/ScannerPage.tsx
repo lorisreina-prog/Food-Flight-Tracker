@@ -4,6 +4,7 @@ import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import Logo from "./Logo";
 import { useSettings } from "./SettingsContext";
 import { getT } from "./i18n";
+import type { Lang } from "./i18n";
 
 const FORMATS = [
   Html5QrcodeSupportedFormats.EAN_13,
@@ -30,6 +31,12 @@ const IconBarcode = () => (
     <path d="M3 5v14M8 5v14M13 5v14M18 5v14M21 5v14" />
   </svg>
 );
+
+const DISCOVER_ITEMS: Record<Lang, string[]> = {
+  de: ["Herkunft", "Charge", "Rückrufe", "Risikobewertung", "Lieferkette", "Nachhaltigkeit", "Zertifikate"],
+  en: ["Origin", "Batch", "Recalls", "Risk Score", "Supply Chain", "Sustainability", "Certificates"],
+  fr: ["Origine", "Lot", "Rappels", "Risque", "Chaîne logistique", "Durabilité", "Certificats"],
+};
 
 const IconSettings = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -126,6 +133,9 @@ export default function ScannerPage() {
         </div>
       </div>
       <h2 className="scanner-title">{tr.scanTitle}</h2>
+      <p style={{ margin: "-4px 0 12px", fontSize: 13, color: "var(--tx-3)", textAlign: "center" }}>
+        {tr.scanSubtitle}
+      </p>
 
       <div className="scanner-card">
         <div id="qr-reader-region" className="qr-reader-region" />
@@ -157,16 +167,41 @@ export default function ScannerPage() {
         <div className="scanner-manual-row">
           <input
             className="scanner-manual-input"
-            placeholder="z.B. 7640150491254"
+            placeholder="z.B. 7640150491254 oder LOT2024-B03"
             value={manualCode}
             onChange={(e) => setManualCode(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submitManual()}
-            inputMode="numeric"
             autoComplete="off"
           />
           <button className="scanner-manual-btn" onClick={submitManual}>
             {tr.search}
           </button>
+        </div>
+      </div>
+
+      <div style={{
+        margin: "20px 0 8px",
+        padding: "14px 16px",
+        background: "var(--surface-2)",
+        border: "1px solid var(--border)",
+        borderRadius: 10,
+      }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--tx-3)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          {tr.discoverTitle}
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {(DISCOVER_ITEMS[lang] ?? DISCOVER_ITEMS.de).map((item) => (
+            <span key={item} style={{
+              padding: "3px 10px",
+              background: "var(--accent-lt)",
+              color: "var(--accent)",
+              borderRadius: 999,
+              fontSize: 12,
+              fontWeight: 600,
+            }}>
+              {item}
+            </span>
+          ))}
         </div>
       </div>
     </div>

@@ -221,7 +221,7 @@ export default function AdminPage() {
             )}
 
             <h2 className="admin-section-title">{tr.allBatches}</h2>
-            <BatchList onRefresh={fetchData} />
+            <BatchList />
           </>
         )}
 
