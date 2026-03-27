@@ -254,6 +254,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+os.makedirs(QR_DIR, exist_ok=True)
 app.mount("/qr_images", StaticFiles(directory=QR_DIR), name="qr_images")
 
 app.include_router(router)
