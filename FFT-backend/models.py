@@ -137,8 +137,8 @@ def award_achievements(db, user_token: str, action: str, batch_id: int = None) -
                 award("recall_reporter", batch_id)
 
         c.execute(
-            "SELECT COUNT(*) as cnt FROM complaint WHERE reporter_name=%s",
-            (user_token,)
+            "SELECT COUNT(*) as cnt FROM complaint WHERE user_token=%s OR (user_token IS NULL AND reporter_name=%s)",
+            (user_token, user_token)
         )
         complaint_count = c.fetchone()["cnt"]
         if complaint_count >= 5:
