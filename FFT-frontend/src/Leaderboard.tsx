@@ -14,6 +14,7 @@ export default function Leaderboard() {
   const [items, setItems] = useState<LeaderboardItem[]>([]);
   const [batches, setBatches] = useState<BatchListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [animated, setAnimated] = useState(false);
 
   useEffect(() => {
     Promise.all([api.getLeaderboard(), api.getBatches()])
@@ -21,10 +22,26 @@ export default function Leaderboard() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (!loading && items.length) {
+      const t = setTimeout(() => setAnimated(true), 80);
+      return () => clearTimeout(t);
+    }
+  }, [loading, items.length]);
+
   const qrFor = (batchId: number) =>
     batches.find((b) => b.batch_id === batchId)?.qr_code ?? String(batchId);
 
   if (loading) return <div className="skeleton-card" style={{ height: 240 }} />;
+
+  if (!items.length) {
+    return (
+      <div className="empty-state">
+        <span className="empty-state-icon">🏆</span>
+        <span className="empty-state-text">Noch keine Einträge im Leaderboard.</span>
+      </div>
+    );
+  }
 
   return (
     <div className="leaderboard">
@@ -57,7 +74,7 @@ export default function Leaderboard() {
                   <div
                     className="lb-score-bar-fill"
                     style={{
-                      width: `${item.trust_score}%`,
+                      width: animated ? `${item.trust_score}%` : "0%",
                       background: TRUST_COLOR(item.trust_score),
                     }}
                   />
@@ -70,7 +87,6 @@ export default function Leaderboard() {
           </Link>
         );
       })}
-      {!items.length && <p className="empty-state">Keine Einträge vorhanden.</p>}
     </div>
   );
 }

@@ -44,7 +44,14 @@ export default function JourneyTimeline({ events }: Props) {
                 {i < lastIdx && <div className="timeline-line" />}
               </div>
               <div className="timeline-content">
-                <div className="timeline-event-type">{e.event_type}</div>
+                <div className="timeline-event-type">
+                  {e.event_type}
+                  {isCurrent && (
+                    <span style={{ marginLeft: 8, fontSize: 11, color: "#16A34A", fontWeight: 600 }}>
+                      ● Aktuell
+                    </span>
+                  )}
+                </div>
                 {e.station_name && <div className="timeline-station">{e.station_name}</div>}
                 {e.location && <div className="timeline-location">{e.location}</div>}
                 <div className="timeline-time">{formatDate(e.timestamp)}</div>

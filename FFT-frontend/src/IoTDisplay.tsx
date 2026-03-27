@@ -24,10 +24,11 @@ function sparkline(vals: number[]): string {
 
 export default function IoTDisplay({ batchId }: Props) {
   const [data, setData] = useState<IoTLiveResponse | null>(null);
+  const [live, setLive] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = () => {
-    api.getIotLive(batchId).then(setData).catch(() => {});
+    api.getIotLive(batchId).then((d) => { setData(d); setLive(true); }).catch(() => {});
   };
 
   useEffect(() => {
@@ -50,7 +51,10 @@ export default function IoTDisplay({ batchId }: Props) {
 
   return (
     <div className="card">
-      <h3 className="card-title">IoT Live-Daten</h3>
+      <div className="iot-title-row">
+        {live && <span className="iot-live-dot" />}
+        <h3 className="card-title" style={{ margin: 0 }}>IoT Live-Daten</h3>
+      </div>
       <div className="iot-row">
         <div className="iot-metric">
           <span className="iot-label">Temperatur</span>

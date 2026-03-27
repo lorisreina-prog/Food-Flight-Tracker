@@ -106,13 +106,14 @@ export default function ScanPage() {
         <p className="product-harvest">Ernte: {formatDate(batch.harvest_date).split(" ")[0]}</p>
         <div className="product-badges">
           {batch.trust_score != null && (
-            <span className="badge" style={{ background: TRUST_COLOR(batch.trust_score) }}>
-              Vertrauen {batch.trust_score}/100
+            <span className="trust-pill" style={{ background: TRUST_COLOR(batch.trust_score) }}>
+              {batch.trust_score}
+              <span className="trust-pill-label">/100 Vertrauen</span>
             </span>
           )}
           {batch.nutri_grade && (
-            <span className="badge" style={{ background: NUTRI_COLOR[batch.nutri_grade] ?? "#6b7280" }}>
-              Nutri-{batch.nutri_grade}
+            <span className="nutri-hero" style={{ background: NUTRI_COLOR[batch.nutri_grade] ?? "#6b7280" }}>
+              {batch.nutri_grade}
             </span>
           )}
           {batch.crowd_score != null && <StarRow score={batch.crowd_score} />}

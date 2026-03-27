@@ -53,8 +53,12 @@ export default function ChatAssistant({ batch_id, batchId, product_name }: Props
   return (
     <div className="card chat-card">
       <button className="chat-toggle" onClick={() => setOpen((o) => !o)}>
-        📦 Food Assistent fragen {open ? "▲" : "▼"}
+        🤖 Food Assistent fragen {open ? "▲" : "▼"}
       </button>
+
+      {!open && (
+        <p className="chat-hint">💬 z.B. „{STARTERS[0]}"</p>
+      )}
 
       {open && (
         <div className="chat-body">

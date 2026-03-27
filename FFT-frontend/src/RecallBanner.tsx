@@ -17,7 +17,8 @@ export default function RecallBanner({ status, recalls }: Props) {
         <div className="recall-critical-inner">
           <div className="recall-icon">⚠️</div>
           <h1>RÜCKRUF</h1>
-          <p className="recall-critical-title">Kritischer Produktrückruf</p>
+          <div className="recall-not-consume">🚫 Nicht konsumieren</div>
+          <p className="recall-critical-title">Kritischer Produktrückruf — Sofort stoppen</p>
           {active.map((r) => (
             <div key={r.recall_id} className="recall-reason-box">
               <p>{r.reason}</p>
@@ -33,7 +34,7 @@ export default function RecallBanner({ status, recalls }: Props) {
   const bg = status === "warning" ? "#D97706" : "#2563EB";
 
   return (
-    <div style={{ background: bg, color: "#fff", padding: "12px 16px" }}>
+    <div style={{ background: bg, color: "#fff", padding: "12px 16px", borderRadius: 10, marginBottom: 12 }}>
       <strong>{status === "warning" ? "⚠️ Warnung" : "ℹ️ Information"}</strong>
       {active.map((r) => (
         <div key={r.recall_id} style={{ marginTop: 4, fontSize: 14 }}>

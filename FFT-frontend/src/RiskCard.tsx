@@ -20,7 +20,8 @@ const LEVEL_LABEL: Record<string, string> = {
   critical: "Kritisch",
 };
 
-const CIRCUMFERENCE = 2 * Math.PI * 32;
+const R = 44;
+const CIRCUMFERENCE = 2 * Math.PI * R;
 
 export default function RiskCard({ batchId }: Props) {
   const [data, setData] = useState<RiskResponse | null>(null);
@@ -36,7 +37,7 @@ export default function RiskCard({ batchId }: Props) {
       .finally(() => setLoading(false));
   }, [batchId]);
 
-  if (loading) return <div className="card skeleton-card" style={{ height: 140 }} />;
+  if (loading) return <div className="card skeleton-card" style={{ height: 160 }} />;
 
   if (error) {
     return (
@@ -54,26 +55,26 @@ export default function RiskCard({ batchId }: Props) {
 
   return (
     <div className="card">
-      <h3 className="card-title">Risikoanalyse</h3>
+      <h3 className="card-title">KI-Risikoanalyse</h3>
 
       <div className="risk-gauge-row">
         <div className="risk-gauge">
-          <svg width="88" height="88" viewBox="0 0 88 88">
-            <circle cx="44" cy="44" r="32" fill="none" stroke="#e5e7eb" strokeWidth="9" />
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r={R} fill="none" stroke="#e5e7eb" strokeWidth="11" />
             <circle
-              cx="44" cy="44" r="32"
+              cx="60" cy="60" r={R}
               fill="none"
               stroke={color}
-              strokeWidth="9"
+              strokeWidth="11"
               strokeDasharray={`${dash} ${CIRCUMFERENCE}`}
               strokeLinecap="round"
-              transform="rotate(-90 44 44)"
-              style={{ transition: "stroke-dasharray .6s ease" }}
+              transform="rotate(-90 60 60)"
+              style={{ transition: "stroke-dasharray .7s ease" }}
             />
-            <text x="44" y="40" textAnchor="middle" fontSize="18" fontWeight="800" fill={color}>
+            <text x="60" y="55" textAnchor="middle" fontSize="26" fontWeight="900" fill={color}>
               {data.risk_score}
             </text>
-            <text x="44" y="54" textAnchor="middle" fontSize="9" fill="#94a3b8">
+            <text x="60" y="70" textAnchor="middle" fontSize="11" fill="#94a3b8">
               /100
             </text>
           </svg>
@@ -88,20 +89,19 @@ export default function RiskCard({ batchId }: Props) {
               Voraussichtliche Haltbarkeit: <strong>{data.shelf_life_days} Tage</strong>
             </p>
           )}
+          {data.risk_factors.length > 0 && (
+            <div className="risk-chips">
+              {data.risk_factors.map((f, i) => (
+                <span key={i} className="risk-chip" style={{ borderColor: color, color }}>
+                  {f}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {data.risk_factors.length > 0 && (
-        <div className="risk-chips">
-          {data.risk_factors.map((f, i) => (
-            <span key={i} className="risk-chip" style={{ borderColor: color, color }}>
-              {f}
-            </span>
-          ))}
-        </div>
-      )}
-
-      <p className="risk-explanation">{data.ai_explanation}</p>
+      <p className="risk-explanation">💡 {data.ai_explanation}</p>
     </div>
   );
 }
