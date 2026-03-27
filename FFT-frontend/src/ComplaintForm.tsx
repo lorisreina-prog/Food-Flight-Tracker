@@ -27,22 +27,22 @@ export default function ComplaintForm({ batchId }: Props) {
       await api.submitComplaint(batchId, name, email, description, category);
       setSubmitted(true);
     } catch (err: any) {
-      if (err?.status === 429) {
-        setError("Zu viele Beanstandungen. Bitte später erneut versuchen.");
-      } else {
-        setError("Beanstandung konnte nicht übermittelt werden.");
-      }
+      if (err?.status === 429) setError("Zu viele Beanstandungen. Bitte später erneut versuchen.");
+      else setError("Beanstandung konnte nicht übermittelt werden.");
     }
   };
 
   return (
-    <div className="card complaint-card">
+    <div className="card">
       <button className="complaint-toggle" onClick={() => setOpen((o) => !o)}>
-        Produkt beanstanden {open ? "▲" : "▼"}
+        <span>⚠️</span>
+        Produkt beanstanden
+        <span style={{ marginLeft: "auto", fontSize: 12, opacity: .6 }}>{open ? "▲" : "▼"}</span>
       </button>
+
       {open && (
         submitted ? (
-          <p className="complaint-thanks">Beanstandung eingereicht. Danke!</p>
+          <div className="complaint-thanks">✅ Beanstandung eingereicht. Danke!</div>
         ) : (
           <form className="complaint-form" onSubmit={submit}>
             <input className="form-input" placeholder="Name *" value={name} onChange={(e) => setName(e.target.value)} />
@@ -51,7 +51,7 @@ export default function ComplaintForm({ batchId }: Props) {
               {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
             <textarea className="form-input" placeholder="Beschreibung *" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
-            {error && <p className="form-error">{error}</p>}
+            {error && <p className="form-error">⚠ {error}</p>}
             <button className="btn-danger" type="submit">Absenden</button>
           </form>
         )

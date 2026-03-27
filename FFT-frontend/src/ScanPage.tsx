@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { api } from "./api";
 import type { BatchDetail } from "./types";
 import { formatDate } from "./types";
@@ -18,66 +18,304 @@ import CrowdRating from "./CrowdRating";
 import AchievementToast from "./AchievementToast";
 import ComplaintForm from "./ComplaintForm";
 
-const TRUST_COLOR = (score: number) =>
-  score < 40 ? "#DC2626" : score <= 70 ? "#D97706" : "#16A34A";
-
+const TRUST_COLOR = (s: number) => s < 40 ? "#DC2626" : s <= 70 ? "#D97706" : "#059669";
 const NUTRI_COLOR: Record<string, string> = {
-  A: "#16A34A", B: "#65A30D", C: "#EAB308", D: "#F97316", E: "#DC2626",
+  A: "#059669", B: "#65A30D", C: "#D97706", D: "#EA580C", E: "#DC2626",
 };
 
+// ── Open Food Facts types ──────────────────────────────────────────
+interface OFFProduct {
+  product_name: string;
+  brands?: string;
+  quantity?: string;
+  categories?: string;
+  origins?: string;
+  countries?: string;
+  nutriscore_grade?: string;
+  labels?: string;
+  ingredients_text?: string;
+  image_front_url?: string;
+  nutriments?: Record<string, number>;
+}
+
+async function fetchOpenFoodFacts(barcode: string): Promise<OFFProduct | null> {
+  try {
+    const res = await fetch(
+      `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`
+    );
+    const data = await res.json();
+    if (data.status === 1 && data.product?.product_name) return data.product as OFFProduct;
+  } catch {}
+  return null;
+}
+
+// ── External product view (Open Food Facts) ────────────────────────
+const NUTRI_CFG: Record<string, { bg: string; text: string }> = {
+  a: { bg: "#059669", text: "#fff" },
+  b: { bg: "#65A30D", text: "#fff" },
+  c: { bg: "#D97706", text: "#fff" },
+  d: { bg: "#EA580C", text: "#fff" },
+  e: { bg: "#DC2626", text: "#fff" },
+};
+
+function ExternalProduct({ product, barcode }: { product: OFFProduct; barcode: string }) {
+  const grade = product.nutriscore_grade?.toLowerCase();
+  const nm = product.nutriments ?? {};
+
+  const nutrients: { label: string; key: string; unit: string }[] = [
+    { label: "Energie", key: "energy-kcal_100g", unit: "kcal" },
+    { label: "Fett", key: "fat_100g", unit: "g" },
+    { label: "Davon gesättigt", key: "saturated-fat_100g", unit: "g" },
+    { label: "Zucker", key: "sugars_100g", unit: "g" },
+    { label: "Ballaststoffe", key: "fiber_100g", unit: "g" },
+    { label: "Protein", key: "proteins_100g", unit: "g" },
+    { label: "Salz", key: "salt_100g", unit: "g" },
+  ];
+
+  return (
+    <div className="scan-page">
+      <div className="scan-topbar">
+        <span className="scan-topbar-logo">🍎 FOOD FLIGHT</span>
+        <Link to="/scanner" style={{ fontSize: 12, color: "var(--tx-3)" }}>← Scan</Link>
+      </div>
+
+      {/* External product notice */}
+      <div style={{
+        background: "var(--amber-lt)", border: "1px solid #FDE68A",
+        borderRadius: "var(--radius)", padding: "12px 16px", marginBottom: 10,
+        display: "flex", alignItems: "center", gap: 10,
+      }}>
+        <span style={{ fontSize: 20 }}>🌐</span>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 13, color: "#92400E" }}>Externes Produkt</div>
+          <div style={{ fontSize: 12, color: "#B45309" }}>
+            Nicht im FFT-System — Daten von Open Food Facts (Barcode: {barcode})
+          </div>
+        </div>
+      </div>
+
+      {/* Product header */}
+      <div className="card product-header">
+        <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+          {product.image_front_url && (
+            <img
+              src={product.image_front_url}
+              alt={product.product_name}
+              style={{ width: 80, height: 80, objectFit: "contain", borderRadius: 8, flexShrink: 0, border: "1px solid var(--border)" }}
+            />
+          )}
+          <div style={{ flex: 1 }}>
+            <h1 className="product-name" style={{ fontSize: "1.6rem" }}>{product.product_name}</h1>
+            <div className="product-meta">
+              {product.brands && <span className="product-origin">{product.brands}</span>}
+              {product.quantity && (
+                <>
+                  <span className="product-origin-sep">·</span>
+                  <span className="product-harvest">{product.quantity}</span>
+                </>
+              )}
+            </div>
+            <div className="product-badges" style={{ marginTop: 8 }}>
+              {grade && NUTRI_CFG[grade] && (
+                <span style={{
+                  background: NUTRI_CFG[grade].bg, color: NUTRI_CFG[grade].text,
+                  borderRadius: 8, padding: "4px 12px", fontWeight: 900, fontSize: 15,
+                }}>
+                  Nutri-{grade.toUpperCase()}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Origin */}
+      {(product.origins || product.countries) && (
+        <div className="card">
+          <h3 className="card-title">Herkunft</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {product.origins && (
+              <div style={{ display: "flex", gap: 10, fontSize: 14 }}>
+                <span style={{ color: "var(--tx-3)", minWidth: 80 }}>Herkunft</span>
+                <span style={{ fontWeight: 600 }}>{product.origins}</span>
+              </div>
+            )}
+            {product.countries && (
+              <div style={{ display: "flex", gap: 10, fontSize: 14 }}>
+                <span style={{ color: "var(--tx-3)", minWidth: 80 }}>Länder</span>
+                <span style={{ fontWeight: 600 }}>{product.countries.split(",").slice(0, 3).join(", ")}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Nutri-Score */}
+      {grade && (
+        <div className="card">
+          <h3 className="card-title">Nutri-Score</h3>
+          <div style={{ display: "flex", gap: 5, marginBottom: 14 }}>
+            {["a","b","c","d","e"].map((g) => {
+              const cfg = NUTRI_CFG[g] ?? { bg: "#94A3B8", text: "#fff" };
+              const active = g === grade;
+              return (
+                <div key={g} style={{
+                  width: active ? 44 : 36, height: active ? 44 : 36,
+                  borderRadius: active ? 10 : 8,
+                  background: active ? cfg.bg : `${cfg.bg}22`,
+                  color: active ? "#fff" : cfg.bg,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontWeight: 900, fontSize: active ? 20 : 15,
+                  transition: "all .15s",
+                  boxShadow: active ? `0 4px 12px ${cfg.bg}50` : "none",
+                }}>
+                  {g.toUpperCase()}
+                </div>
+              );
+            })}
+          </div>
+
+          {Object.keys(nm).length > 0 && (
+            <table className="nutri-table">
+              <tbody>
+                {nutrients.filter(n => nm[n.key] != null).map(n => (
+                  <tr key={n.key}>
+                    <td>{n.label}</td>
+                    <td>{Number(nm[n.key]).toFixed(n.unit === "kcal" ? 0 : 1)} {n.unit}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* Labels */}
+      {product.labels && (
+        <div className="card">
+          <h3 className="card-title">Siegel & Labels</h3>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {product.labels.split(",").map((l) => l.trim()).filter(Boolean).map((label) => (
+              <span key={label} style={{
+                background: "var(--green-lt)", color: "#065F46",
+                border: "1px solid #A7F3D0", borderRadius: 999,
+                padding: "4px 10px", fontSize: 12, fontWeight: 600,
+              }}>
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Ingredients */}
+      {product.ingredients_text && (
+        <div className="card">
+          <h3 className="card-title">Zutaten</h3>
+          <p style={{ fontSize: 13, color: "var(--tx-2)", lineHeight: 1.7 }}>
+            {product.ingredients_text}
+          </p>
+        </div>
+      )}
+
+      {/* Categories */}
+      {product.categories && (
+        <div className="card">
+          <h3 className="card-title">Kategorie</h3>
+          <p style={{ fontSize: 13, color: "var(--tx-2)" }}>
+            {product.categories.split(",").slice(0, 4).map(c => c.trim()).join(" · ")}
+          </p>
+        </div>
+      )}
+
+      <Link to="/scanner" className="scan-fab">
+        ⟳ Weiterscannen
+      </Link>
+    </div>
+  );
+}
+
+// ── Star row ───────────────────────────────────────────────────────
 function StarRow({ score }: { score: number }) {
   const full = Math.round(score);
   return (
     <span className="star-row">
-      {[1, 2, 3, 4, 5].map((s) => (
-        <span key={s} style={{ color: s <= full ? "#F59E0B" : "#d1d5db" }}>★</span>
+      {[1,2,3,4,5].map((s) => (
+        <span key={s} style={{ color: s <= full ? "#F59E0B" : "#D1D5DB", fontSize: 17 }}>★</span>
       ))}
       <span className="crowd-score-val">{score.toFixed(1)}</span>
     </span>
   );
 }
 
+// ── Loading skeleton ───────────────────────────────────────────────
 function Skeleton() {
   return (
     <div className="scan-page">
-      <div className="skeleton skeleton-title" />
-      <div className="skeleton skeleton-line" />
-      <div className="skeleton skeleton-line" style={{ width: "60%" }} />
-      <div className="skeleton skeleton-card" style={{ marginTop: 16, height: 120 }} />
+      <div className="skeleton skeleton-title" style={{ width: "70%", height: 32 }} />
+      <div className="skeleton skeleton-line" style={{ width: "50%" }} />
+      <div className="skeleton skeleton-line" style={{ width: "35%", marginBottom: 20 }} />
+      <div className="skeleton skeleton-card" style={{ height: 130 }} />
+      <div className="skeleton skeleton-card" style={{ height: 160, marginTop: 10 }} />
     </div>
   );
 }
 
+// ── Main ScanPage ──────────────────────────────────────────────────
 export default function ScanPage() {
   const { qr_code } = useParams<{ qr_code: string }>();
   const [batch, setBatch] = useState<BatchDetail | null>(null);
+  const [offProduct, setOffProduct] = useState<OFFProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [connError, setConnError] = useState(false);
 
   const userToken = localStorage.getItem("fft_user_token") ?? "";
   const sessionId = `${userToken}_${qr_code}`;
+  const decoded = decodeURIComponent(qr_code ?? "");
 
   useEffect(() => {
-    if (!qr_code) return;
+    if (!decoded) return;
     setLoading(true);
-    api.getBatch(qr_code)
+    setBatch(null);
+    setOffProduct(null);
+    setNotFound(false);
+    setConnError(false);
+
+    api.getBatch(decoded)
       .then(setBatch)
-      .catch((err: any) => {
-        if (err?.status === 404) setNotFound(true);
-        else setConnError(true);
+      .catch(async (err: any) => {
+        if (err?.status === 404) {
+          // Try Open Food Facts for numeric barcodes (EAN-8 / EAN-13 / UPC)
+          if (/^\d{6,14}$/.test(decoded)) {
+            const off = await fetchOpenFoodFacts(decoded);
+            if (off) { setOffProduct(off); return; }
+          }
+          setNotFound(true);
+        } else {
+          setConnError(true);
+        }
       })
       .finally(() => setLoading(false));
-  }, [qr_code]);
+  }, [decoded]);
 
   if (loading) return <Skeleton />;
+
+  // External product found via Open Food Facts
+  if (offProduct) return <ExternalProduct product={offProduct} barcode={decoded} />;
 
   if (notFound) {
     return (
       <div className="scan-page scan-state">
         <div className="scan-state-icon">🔍</div>
         <h2>Produkt nicht gefunden</h2>
-        <p>QR-Code <code>{qr_code}</code> ist nicht im System registriert.</p>
+        <p>Code <code>{decoded}</code> ist nicht im System registriert.</p>
+        <Link to="/scanner" style={{
+          marginTop: 16, background: "var(--accent)", color: "#fff",
+          padding: "10px 24px", borderRadius: "var(--radius-sm)", fontWeight: 700,
+        }}>
+          Erneut scannen
+        </Link>
       </div>
     );
   }
@@ -96,14 +334,24 @@ export default function ScanPage() {
 
   return (
     <div className="scan-page">
+      <div className="scan-topbar">
+        <span className="scan-topbar-logo">🍎 FOOD FLIGHT</span>
+        <Link to="/admin" style={{ fontSize: 12, color: "var(--tx-3)" }}>Admin →</Link>
+      </div>
+
       {batch.recall_status !== "none" && (
         <RecallBanner status={batch.recall_status} recalls={batch.recalls} />
       )}
 
-      <div className="product-header card">
+      <div className="card product-header">
         <h1 className="product-name">{batch.product_name}</h1>
-        <p className="product-origin">{batch.origin_farm}, {batch.origin_country}</p>
-        <p className="product-harvest">Ernte: {formatDate(batch.harvest_date).split(" ")[0]}</p>
+        <div className="product-meta">
+          <span className="product-origin">{batch.origin_farm}</span>
+          <span className="product-origin-sep">·</span>
+          <span className="product-origin">{batch.origin_country}</span>
+          <span className="product-origin-sep">·</span>
+          <span className="product-harvest">Ernte {formatDate(batch.harvest_date).split(" ")[0]}</span>
+        </div>
         <div className="product-badges">
           {batch.trust_score != null && (
             <span className="trust-pill" style={{ background: TRUST_COLOR(batch.trust_score) }}>
@@ -133,6 +381,8 @@ export default function ScanPage() {
       <CrowdRating batchId={batch.batch_id} userToken={userToken} />
       <ComplaintForm batchId={batch.batch_id} />
       <AchievementToast userToken={userToken} batchId={batch.batch_id} />
+
+      <Link to="/scanner" className="scan-fab">📷 Scannen</Link>
     </div>
   );
 }

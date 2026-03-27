@@ -21,39 +21,43 @@ export default function CrowdRating({ batchId, userToken }: Props) {
       await api.submitCrowdRating(batchId, stars, comment, userToken);
       setSubmitted(true);
     } catch (err: any) {
-      if (err?.status === 400) {
-        setAlreadyRated(true);
-      } else {
-        setError("Bewertung konnte nicht gespeichert werden. Bitte erneut versuchen.");
-      }
+      if (err?.status === 400) setAlreadyRated(true);
+      else setError("Bewertung konnte nicht gespeichert werden. Bitte erneut versuchen.");
     }
   };
 
   if (submitted) {
     return (
-      <div className="card crowd-card">
-        <p className="crowd-thanks">Danke für deine Bewertung! ⭐</p>
+      <div className="card">
+        <div className="crowd-thanks">✅ Danke für deine Bewertung!</div>
       </div>
     );
   }
 
   if (alreadyRated) {
     return (
-      <div className="card crowd-card">
+      <div className="card">
         <p className="crowd-already-rated">Du hast dieses Produkt bereits bewertet.</p>
       </div>
     );
   }
 
+  const active = hover || stars;
+
   return (
-    <div className="card crowd-card">
+    <div className="card">
       <h3 className="card-title">Produkt bewerten</h3>
       <div className="stars-row">
-        {[1, 2, 3, 4, 5].map((s) => (
+        {[1,2,3,4,5].map((s) => (
           <span
             key={s}
-            className="star"
-            style={{ color: s <= (hover || stars) ? "#F59E0B" : "#d1d5db", cursor: "pointer", fontSize: 28 }}
+            style={{
+              color: s <= active ? "#F59E0B" : "#D1D5DB",
+              cursor: "pointer", fontSize: 32,
+              transition: "color .1s, transform .1s",
+              transform: s <= active ? "scale(1.1)" : "scale(1)",
+              display: "inline-block",
+            }}
             onMouseEnter={() => setHover(s)}
             onMouseLeave={() => setHover(0)}
             onClick={() => setStars(s)}
@@ -62,14 +66,16 @@ export default function CrowdRating({ batchId, userToken }: Props) {
           </span>
         ))}
       </div>
-      <textarea
-        className="crowd-comment"
-        placeholder="Kommentar (optional)"
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        rows={2}
-      />
-      {error && <p className="form-error">{error}</p>}
+      {stars > 0 && (
+        <textarea
+          className="crowd-comment"
+          placeholder="Kommentar (optional)"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          rows={2}
+        />
+      )}
+      {error && <p className="form-error">⚠ {error}</p>}
       <button className="btn-primary" onClick={submit} disabled={!stars}>
         Bewertung abschicken
       </button>

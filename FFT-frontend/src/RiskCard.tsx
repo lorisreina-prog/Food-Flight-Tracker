@@ -7,9 +7,9 @@ interface Props {
 }
 
 const LEVEL_COLOR: Record<string, string> = {
-  low: "#16A34A",
+  low: "#059669",
   medium: "#D97706",
-  high: "#F97316",
+  high: "#EA580C",
   critical: "#DC2626",
 };
 
@@ -18,6 +18,13 @@ const LEVEL_LABEL: Record<string, string> = {
   medium: "Mittel",
   high: "Hoch",
   critical: "Kritisch",
+};
+
+const LEVEL_BG: Record<string, string> = {
+  low: "#D1FAE5",
+  medium: "#FEF3C7",
+  high: "#FFEDD5",
+  critical: "#FEE2E2",
 };
 
 const R = 44;
@@ -42,7 +49,7 @@ export default function RiskCard({ batchId }: Props) {
   if (error) {
     return (
       <div className="card">
-        <h3 className="card-title">Risikoanalyse</h3>
+        <h3 className="card-title">KI-Risikoanalyse</h3>
         <p className="risk-error">Risikoanalyse konnte nicht geladen werden.</p>
       </div>
     );
@@ -51,6 +58,7 @@ export default function RiskCard({ batchId }: Props) {
   if (!data) return null;
 
   const color = LEVEL_COLOR[data.risk_level] ?? "#6b7280";
+  const bg = LEVEL_BG[data.risk_level] ?? "#F1F5F9";
   const dash = (data.risk_score / 100) * CIRCUMFERENCE;
 
   return (
@@ -60,12 +68,10 @@ export default function RiskCard({ batchId }: Props) {
       <div className="risk-gauge-row">
         <div className="risk-gauge">
           <svg width="120" height="120" viewBox="0 0 120 120">
-            <circle cx="60" cy="60" r={R} fill="none" stroke="#e5e7eb" strokeWidth="11" />
+            <circle cx="60" cy="60" r={R} fill="none" stroke="#E2E8F0" strokeWidth="11" />
             <circle
               cx="60" cy="60" r={R}
-              fill="none"
-              stroke={color}
-              strokeWidth="11"
+              fill="none" stroke={color} strokeWidth="11"
               strokeDasharray={`${dash} ${CIRCUMFERENCE}`}
               strokeLinecap="round"
               transform="rotate(-90 60 60)"
@@ -74,7 +80,7 @@ export default function RiskCard({ batchId }: Props) {
             <text x="60" y="55" textAnchor="middle" fontSize="26" fontWeight="900" fill={color}>
               {data.risk_score}
             </text>
-            <text x="60" y="70" textAnchor="middle" fontSize="11" fill="#94a3b8">
+            <text x="60" y="70" textAnchor="middle" fontSize="11" fill="#94A3B8">
               /100
             </text>
           </svg>
@@ -86,7 +92,7 @@ export default function RiskCard({ batchId }: Props) {
           </span>
           {data.shelf_life_days != null && (
             <p className="risk-shelf">
-              Voraussichtliche Haltbarkeit: <strong>{data.shelf_life_days} Tage</strong>
+              Haltbarkeit: <strong>{data.shelf_life_days} Tage</strong>
             </p>
           )}
           {data.risk_factors.length > 0 && (
@@ -101,7 +107,11 @@ export default function RiskCard({ batchId }: Props) {
         </div>
       </div>
 
-      <p className="risk-explanation">💡 {data.ai_explanation}</p>
+      <div style={{ background: bg, borderRadius: "var(--radius-sm)", padding: "12px 14px" }}>
+        <p className="risk-explanation" style={{ borderTop: "none", paddingTop: 0, marginTop: 0 }}>
+          {data.ai_explanation}
+        </p>
+      </div>
     </div>
   );
 }

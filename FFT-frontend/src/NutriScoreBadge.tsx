@@ -7,12 +7,12 @@ interface Props {
   grade: string;
 }
 
-const GRADE_COLOR: Record<string, string> = {
-  A: "#16A34A",
-  B: "#65A30D",
-  C: "#EAB308",
-  D: "#F97316",
-  E: "#DC2626",
+const GRADE_CONFIG: Record<string, { bg: string; faded: string }> = {
+  A: { bg: "#059669", faded: "#ECFDF5" },
+  B: { bg: "#65A30D", faded: "#F7FEE7" },
+  C: { bg: "#D97706", faded: "#FFFBEB" },
+  D: { bg: "#EA580C", faded: "#FFF7ED" },
+  E: { bg: "#DC2626", faded: "#FEF2F2" },
 };
 
 export default function NutriScoreBadge({ batchId, grade }: Props) {
@@ -22,18 +22,29 @@ export default function NutriScoreBadge({ batchId, grade }: Props) {
     api.getNutriScore(batchId).then(setData).catch(() => {});
   }, [batchId]);
 
-  const color = GRADE_COLOR[grade] ?? "#6b7280";
-
   return (
     <div className="card">
       <h3 className="card-title">Nutri-Score</h3>
-      <div className="nutri-header">
-        {["A", "B", "C", "D", "E"].map((g) => (
-          <div key={g} className={`nutri-grade-box ${g === grade ? "nutri-grade-box--active" : ""}`}
-            style={{ background: g === grade ? GRADE_COLOR[g] : "#e5e7eb", color: g === grade ? "#fff" : "#9ca3af" }}>
-            {g}
-          </div>
-        ))}
+      <div style={{ display: "flex", gap: 5, marginBottom: 16 }}>
+        {["A", "B", "C", "D", "E"].map((g) => {
+          const cfg = GRADE_CONFIG[g] ?? { bg: "#94A3B8", faded: "#F1F5F9" };
+          const active = g === grade;
+          return (
+            <div key={g} style={{
+              width: active ? 44 : 36, height: active ? 44 : 36,
+              borderRadius: active ? 10 : 8,
+              background: active ? cfg.bg : cfg.faded,
+              color: active ? "#fff" : cfg.bg,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontWeight: 900, fontSize: active ? 20 : 15,
+              transition: "all .15s",
+              border: `2px solid ${active ? cfg.bg : "transparent"}`,
+              boxShadow: active ? `0 4px 12px ${cfg.bg}40` : "none",
+            }}>
+              {g}
+            </div>
+          );
+        })}
       </div>
       {data && (
         <table className="nutri-table">

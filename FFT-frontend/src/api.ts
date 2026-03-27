@@ -5,7 +5,10 @@ import type {
   ComplaintListItem, AchievementItem,
 } from "./types";
 
-async function req<T>(url: string, init?: RequestInit): Promise<T> {
+const BASE = import.meta.env.VITE_API_URL ?? "";
+
+async function req<T>(path: string, init?: RequestInit): Promise<T> {
+  const url = `${BASE}${path}`;
   const res = await fetch(url, init);
   if (!res.ok) {
     const err = new Error(`${res.status}`);
