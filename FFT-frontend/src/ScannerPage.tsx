@@ -74,7 +74,7 @@ export default function ScannerPage() {
           scanner.stop().catch(() => {});
           const parts = decoded.split("/");
           const code = parts[parts.length - 1].trim();
-          navigate(`/scan/${encodeURIComponent(code)}`);
+          setTimeout(() => navigate(`/scan/${encodeURIComponent(code)}`), 0);
         },
         () => {}
       )
@@ -93,7 +93,7 @@ export default function ScannerPage() {
   const submitManual = () => {
     const code = manualCode.trim();
     if (!code) return;
-    navigate(`/scan/${encodeURIComponent(code)}`);
+    setTimeout(() => navigate(`/scan/${encodeURIComponent(code)}`), 0);
   };
 
   return (

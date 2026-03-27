@@ -19,6 +19,19 @@ function scaleY(val: number, min: number, max: number): number {
   return H - PAD.bottom - ((val - min) / range) * (H - PAD.top - PAD.bottom);
 }
 
+const SvgCheck = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+const SvgAlert = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+);
+
 export default function ColdChainChart({ batchId }: Props) {
   const [data, setData] = useState<ColdChainResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,26 +65,23 @@ export default function ColdChainChart({ batchId }: Props) {
           background: ok ? "var(--green-lt)" : "var(--red-lt)",
           color: ok ? "var(--green)" : "var(--red)",
           textTransform: "none", letterSpacing: 0,
+          display: "inline-flex", alignItems: "center", gap: 4,
         }}>
-          {ok ? "✓ OK" : `⚠ ${data.breaches} Verstoss`}
+          {ok ? <SvgCheck /> : <SvgAlert />}
+          {ok ? "OK" : `${data.breaches} Verstoss`}
         </span>
       </h3>
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
-        {/* safe band */}
         <rect x={PAD.left} y={bandTop} width={W - PAD.left - PAD.right}
           height={bandBot - bandTop} fill="#D1FAE5" opacity={0.7} rx={4} />
-        {/* dashed lines for min/max */}
         <line x1={PAD.left} y1={bandTop} x2={W - PAD.right} y2={bandTop}
           stroke="#059669" strokeWidth="1" strokeDasharray="4 3" opacity={0.5} />
         <line x1={PAD.left} y1={bandBot} x2={W - PAD.right} y2={bandBot}
           stroke="#059669" strokeWidth="1" strokeDasharray="4 3" opacity={0.5} />
-        {/* labels */}
         <text x={PAD.left - 4} y={bandTop + 4} fontSize="9" fill="#059669" textAnchor="end">{allMax}°</text>
         <text x={PAD.left - 4} y={bandBot} fontSize="9" fill="#059669" textAnchor="end">{allMin}°</text>
-        {/* temperature line */}
         <polyline points={points} fill="none" stroke="#4F46E5" strokeWidth="2.5"
           strokeLinejoin="round" strokeLinecap="round" />
-        {/* dots */}
         {logs.map((l, i) => (
           <circle key={i}
             cx={scaleX(i, logs.length)} cy={scaleY(l.temp_celsius, yMin, yMax)}

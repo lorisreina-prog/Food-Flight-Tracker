@@ -1,4 +1,4 @@
-const CACHE = "essenstracker-v1";
+const CACHE = "essenstracker-v2";
 
 const APP_SHELL = [
   "/",
@@ -33,6 +33,13 @@ self.addEventListener("fetch", (e) => {
           headers: { "Content-Type": "application/json" },
         })
       )
+    );
+    return;
+  }
+
+  if (request.mode === "navigate") {
+    e.respondWith(
+      caches.match("/").then((cached) => cached ?? fetch("/"))
     );
     return;
   }
