@@ -1,6 +1,9 @@
 import os
 import psycopg
 from psycopg.rows import dict_row
+from dotenv import load_dotenv
+
+load_dotenv()
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 
