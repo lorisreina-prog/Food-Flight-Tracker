@@ -10,3 +10,4 @@ FFT-frontend/node_modules/
 FFT-frontend/dist/
 FFT-frontend/.env
 FFT-frontend/.env.local
+FFT-frontend/.env.example

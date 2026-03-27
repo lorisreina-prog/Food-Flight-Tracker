@@ -1,6 +1,12 @@
 import type { CertificateItem } from "./types";
 import { formatDate } from "./types";
 
+const SvgVerified = () => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
 interface Props {
   certificates: CertificateItem[];
 }
@@ -32,8 +38,11 @@ export default function CertificateBadges({ certificates }: Props) {
                 {c.verified && (
                   <span style={{
                     fontSize: 10, fontWeight: 700, color: scheme.text,
-                    background: scheme.border, borderRadius: 999, padding: "1px 6px",
-                  }}>✓ Verifiziert</span>
+                    background: scheme.border, borderRadius: 999, padding: "2px 7px",
+                    display: "inline-flex", alignItems: "center", gap: 3,
+                  }}>
+                    <SvgVerified /> Verifiziert
+                  </span>
                 )}
               </div>
               <span style={{ fontSize: 11, color: scheme.text, opacity: .7 }}>

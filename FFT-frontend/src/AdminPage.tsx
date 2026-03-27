@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "./api";
 import { logout, getSession } from "./auth";
+import Logo from "./Logo";
+import { useSettings } from "./SettingsContext";
+import { getT } from "./i18n";
 import type { ActiveRecall, BatchListItem } from "./types";
 import { formatDate } from "./types";
 import BatchList from "./BatchList";
@@ -64,30 +67,37 @@ const IconLogOut = () => (
   </svg>
 );
 
-function StatsBar({ recalls, batches }: { recalls: ActiveRecall[]; batches: BatchListItem[] }) {
+const IconSettings = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+  </svg>
+);
+
+function StatsBar({ recalls, batches, tr }: { recalls: ActiveRecall[]; batches: BatchListItem[]; tr: ReturnType<typeof getT> }) {
   const avg = batches.length
     ? Math.round(batches.reduce((s, b) => s + (b.trust_score ?? 0), 0) / batches.length)
     : null;
   return (
     <div className="admin-stats">
       <div className="admin-stat-card">
-        <div className="admin-stat-label">Produkte</div>
+        <div className="admin-stat-label">{tr.products}</div>
         <div className="admin-stat-value">{batches.length}</div>
-        <div className="admin-stat-sub">Chargen im System</div>
+        <div className="admin-stat-sub">{tr.batchesInSystem}</div>
       </div>
       <div className="admin-stat-card">
-        <div className="admin-stat-label">Aktive Rückrufe</div>
+        <div className="admin-stat-label">{tr.activeRecalls}</div>
         <div className="admin-stat-value" style={{ color: recalls.length ? "#DC2626" : "#059669" }}>
           {recalls.length}
         </div>
-        <div className="admin-stat-sub">{recalls.length ? "Sofortige Massnahme nötig" : "Alles in Ordnung"}</div>
+        <div className="admin-stat-sub">{recalls.length ? tr.urgentAction : tr.allOk}</div>
       </div>
       <div className="admin-stat-card">
-        <div className="admin-stat-label">Ø Vertrauensscore</div>
+        <div className="admin-stat-label">{tr.avgTrust}</div>
         <div className="admin-stat-value" style={{ color: avg == null ? "#94A3B8" : avg < 50 ? "#DC2626" : avg < 75 ? "#D97706" : "#059669" }}>
           {avg ?? "—"}
         </div>
-        <div className="admin-stat-sub">Durchschnitt aller Chargen</div>
+        <div className="admin-stat-sub">{tr.avgAllBatches}</div>
       </div>
     </div>
   );
@@ -98,6 +108,8 @@ export default function AdminPage() {
   const [recalls, setRecalls] = useState<ActiveRecall[]>([]);
   const [batches, setBatches] = useState<BatchListItem[]>([]);
   const navigate = useNavigate();
+  const { lang, openPanel } = useSettings();
+  const tr = getT(lang);
 
   const fetchData = () => {
     api.getActiveRecalls().then(setRecalls).catch(() => {});
@@ -128,8 +140,8 @@ export default function AdminPage() {
       <aside className="admin-sidebar">
         <div className="admin-sidebar-top">
           <div className="admin-logo">
-            <img src="/logo.png" alt="EssensTracker" className="admin-logo-img" />
-            EssensTracker
+            <Logo size={30} />
+            FoodTrace
           </div>
           <div className="admin-tagline">{authUser}</div>
         </div>
@@ -140,32 +152,36 @@ export default function AdminPage() {
             onClick={() => setTab("overview")}
           >
             <span className="admin-nav-icon"><IconGrid /></span>
-            Übersicht
+            {tr.overview}
           </button>
           <button
             className={`admin-nav-item ${tab === "complaints" ? "admin-nav-item--active" : ""}`}
             onClick={() => setTab("complaints")}
           >
             <span className="admin-nav-icon"><IconClipboard /></span>
-            Beanstandungen
+            {tr.complaints}
           </button>
           <button
             className={`admin-nav-item ${tab === "leaderboard" ? "admin-nav-item--active" : ""}`}
             onClick={() => setTab("leaderboard")}
           >
             <span className="admin-nav-icon"><IconTrophy /></span>
-            Leaderboard
+            {tr.leaderboard}
           </button>
         </nav>
 
         <div className="admin-sidebar-bottom">
           <Link to="/scanner" className="admin-nav-scan">
             <IconCamera />
-            Produkt scannen
+            {tr.scanProduct}
           </Link>
+          <button className="settings-gear-btn" onClick={openPanel}>
+            <IconSettings />
+            {tr.settings}
+          </button>
           <button className="admin-logout-btn" onClick={handleLogout}>
             <IconLogOut />
-            Abmelden
+            {tr.logout}
           </button>
         </div>
       </aside>
@@ -173,7 +189,7 @@ export default function AdminPage() {
       <main className="admin-main">
         {tab === "overview" && (
           <>
-            <StatsBar recalls={recalls} batches={batches} />
+            <StatsBar recalls={recalls} batches={batches} tr={tr} />
 
             {recalls.length > 0 ? (
               <div className="recall-strip">
@@ -204,21 +220,21 @@ export default function AdminPage() {
               </div>
             )}
 
-            <h2 className="admin-section-title">Alle Chargen</h2>
+            <h2 className="admin-section-title">{tr.allBatches}</h2>
             <BatchList onRefresh={fetchData} />
           </>
         )}
 
         {tab === "complaints" && (
           <>
-            <h2 className="admin-section-title">Beanstandungen</h2>
+            <h2 className="admin-section-title">{tr.complaints}</h2>
             <ComplaintList />
           </>
         )}
 
         {tab === "leaderboard" && (
           <>
-            <h2 className="admin-section-title">Leaderboard</h2>
+            <h2 className="admin-section-title">{tr.leaderboard}</h2>
             <Leaderboard />
           </>
         )}
