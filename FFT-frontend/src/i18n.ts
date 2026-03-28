@@ -96,6 +96,10 @@ const t = {
     pwCheckNumber: "Zahl",
     scannerInitError: "Scanner konnte nicht initialisiert werden.",
     cameraUnavailable: "Kamera nicht verfügbar — Berechtigung prüfen oder Code manuell eingeben.",
+    inputTooShort: "Code zu kurz – mindestens 6 Zeichen für EAN-Barcodes",
+    inputTooLong: "Code zu lang – maximal 14 Zeichen",
+    inputInvalidFormat: "Ungültiges Format – bitte QR-Code oder EAN-Barcode eingeben",
+    importLoading: "Produktdaten werden abgerufen...",
   },
   en: {
     appName: "FoodTrace",
@@ -182,6 +186,10 @@ const t = {
     pwCheckNumber: "Number",
     scannerInitError: "Scanner could not be initialized.",
     cameraUnavailable: "Camera unavailable — check permission or enter code manually.",
+    inputTooShort: "Code too short – at least 6 characters for EAN barcodes",
+    inputTooLong: "Code too long – maximum 14 characters",
+    inputInvalidFormat: "Invalid format – please enter a QR code or EAN barcode",
+    importLoading: "Fetching product data...",
   },
   fr: {
     appName: "FoodTrace",
@@ -268,6 +276,10 @@ const t = {
     pwCheckNumber: "Chiffre",
     scannerInitError: "Le scanner n'a pas pu être initialisé.",
     cameraUnavailable: "Caméra indisponible — vérifiez l'autorisation ou saisissez le code manuellement.",
+    inputTooShort: "Code trop court – au moins 6 caractères pour les codes-barres EAN",
+    inputTooLong: "Code trop long – maximum 14 caractères",
+    inputInvalidFormat: "Format invalide – veuillez saisir un QR code ou un code-barres EAN",
+    importLoading: "Récupération des données produit...",
   },
 } as const;
 

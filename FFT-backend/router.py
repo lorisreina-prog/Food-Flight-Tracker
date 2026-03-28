@@ -3,7 +3,6 @@ import hashlib
 import io
 import json
 import os
-import random
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -30,6 +29,7 @@ from schemas import (
     AchievementItem, OcrRequest, OcrResponse,
     ScanRegisterRequest, ScanRegisterResponse,
     AuthRequest, AuthResponse,
+    AutoImportRequest,
 )
 from qr import generate_qr, get_qr_image_path
 import ai as ai_module
@@ -50,7 +50,7 @@ TEMP_RANGES = {
 STAGE_ORDER = {"farm": 0, "processing": 1, "transport": 2, "retail": 3}
 
 
-def _temp_range(product_category: str) -> tuple[float, float]:
+def _temp_range_by_cat(product_category: str) -> tuple:
     key = product_category.lower()
     for k, v in TEMP_RANGES.items():
         if k in key:
@@ -117,6 +117,116 @@ def _score_to_level(score: int) -> str:
 def _lookup_batch_by_code(c, code: str):
     c.execute("SELECT * FROM batch WHERE qr_code=%s OR batch_code=%s", (code, code))
     return c.fetchone()
+
+
+def _shelf_life_days(category: str) -> int:
+    c = category.lower()
+    if any(x in c for x in ["water", "wasser", "eau", "mineral"]):
+        return 730
+    if any(x in c for x in ["milk", "milch", "lait", "dairy", "yogurt", "joghurt"]):
+        return 10
+    if any(x in c for x in ["meat", "fleisch", "viande", "fish", "fisch"]):
+        return 5
+    if any(x in c for x in ["bread", "brot", "pain", "bakery"]):
+        return 7
+    if any(x in c for x in ["frozen", "tiefkühl", "surgelé"]):
+        return 365
+    if any(x in c for x in ["beverage", "getränk", "boisson", "juice", "saft", "jus", "drink", "mate", "cola", "beer", "bier", "wine", "wein"]):
+        return 365
+    if any(x in c for x in ["snack", "chip", "cracker", "biscuit", "keks"]):
+        return 180
+    if any(x in c for x in ["chocolate", "schokolade", "chocolat", "candy", "confection"]):
+        return 365
+    return 90
+
+
+def _needs_refrigeration(category: str) -> bool:
+    c = category.lower()
+    return any(x in c for x in [
+        "milk", "milch", "lait", "dairy", "yogurt", "joghurt",
+        "meat", "fleisch", "viande", "fish", "fisch",
+        "fresh", "frisch", "frais", "refrigerated", "kühl"
+    ])
+
+
+def _cold_temp_range(category: str) -> tuple:
+    c = category.lower()
+    if any(x in c for x in ["frozen", "tiefkühl"]):
+        return (-22.0, -18.0)
+    if any(x in c for x in ["meat", "fleisch", "fish", "fisch"]):
+        return (0.0, 4.0)
+    if any(x in c for x in ["milk", "milch", "dairy", "yogurt"]):
+        return (2.0, 8.0)
+    return (2.0, 8.0)
+
+
+def _compute_auto_risk(has_cold_violation: bool, category: str) -> tuple:
+    score = 15
+    factors = []
+    if has_cold_violation:
+        score += 35
+        factors.append("Kühlkettenunterbrechung während Transport festgestellt")
+    else:
+        factors.append("Kühlkette vollständig eingehalten")
+    factors.append("Keine aktiven Rückrufe")
+    factors.append("Qualitätskontrolle bestanden")
+    if score >= 50:
+        level = "high"
+        expl = "Erhöhtes Risiko durch dokumentierte Kühlkettenunterbrechung. Qualitätsbeeinträchtigung möglich."
+    else:
+        level = "low"
+        expl = "Niedriges Risiko. Alle Kontrollen bestanden, keine Rückrufe aktiv."
+    return score, level, factors, expl
+
+
+def _deterministic_float(seed_str: str, min_val: float, max_val: float) -> float:
+    h = int(hashlib.md5(seed_str.encode()).hexdigest(), 16)
+    return round(min_val + (h % 1000) / 1000.0 * (max_val - min_val), 2)
+
+
+def _transport_km(barcode: str, origin_country: str) -> int:
+    o = origin_country.lower()
+    if any(x in o for x in ["france", "schweiz", "switzerland", "germany", "deutschland"]):
+        return int(_deterministic_float(barcode + "_km", 100, 500))
+    if any(x in o for x in ["europe", "europa", "österreich", "austria", "italy", "italia", "spain", "espagne"]):
+        return int(_deterministic_float(barcode + "_km", 200, 800))
+    return int(_deterministic_float(barcode + "_km", 8000, 15000))
+
+
+def _price_stages(category: str) -> list:
+    c = category.lower()
+    if any(x in c for x in ["water", "wasser", "mineral", "beverage", "getränk"]):
+        first = "source"
+    elif any(x in c for x in ["milk", "dairy", "käse", "cheese"]):
+        first = "farm"
+    else:
+        first = "production"
+    return [first, "processing", "transport", "retail"]
+
+
+def _get_or_create_generic_stations(c, conn, origin_country: str) -> dict:
+    prefix = f"__auto_{origin_country[:20]}__"
+    c.execute("SELECT station_id, type FROM station WHERE name LIKE %s", (prefix + "%",))
+    existing = {r["type"]: r["station_id"] for r in c.fetchall()}
+    needed = {
+        "farm": f"{prefix}Production",
+        "processing": f"{prefix}Quality Control",
+        "storage": f"{prefix}Distribution Center",
+        "transport": f"{prefix}Logistics",
+        "retailer": f"{prefix}Retail",
+    }
+    result = {}
+    for stype, sname in needed.items():
+        if stype in existing:
+            result[stype] = existing[stype]
+        else:
+            c.execute(
+                "INSERT INTO station (name, type, location, operator) VALUES (%s,%s,%s,%s) RETURNING station_id",
+                (sname, stype, origin_country, "Auto-generated")
+            )
+            result[stype] = c.fetchone()["station_id"]
+    conn.commit()
+    return result
 
 
 @router.get("/api/batches", response_model=list[BatchListItem])
@@ -352,6 +462,21 @@ def create_complaint(batch_id: int, body: ComplaintCreate, conn=Depends(db)):
     if not c.fetchone():
         raise HTTPException(status_code=404, detail="batch not found")
 
+    reporter_name = (body.reporter_name or "").strip()
+    if not reporter_name:
+        raise HTTPException(status_code=400, detail="reporter_name is required")
+
+    if body.reporter_email:
+        email = body.reporter_email.strip()
+        if "@" not in email or "." not in email.split("@")[-1]:
+            raise HTTPException(status_code=400, detail="invalid email format")
+
+    description = (body.description or "").strip()
+    if len(description) < 10:
+        raise HTTPException(status_code=400, detail="description must be at least 10 characters")
+    if len(description) > 2000:
+        raise HTTPException(status_code=400, detail="description must be at most 2000 characters")
+
     one_hour_ago = (datetime.utcnow() - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
     c.execute(
         "SELECT COUNT(*) as cnt FROM complaint_rate_limit WHERE batch_id=%s AND submitted_at > %s",
@@ -360,17 +485,25 @@ def create_complaint(batch_id: int, body: ComplaintCreate, conn=Depends(db)):
     if c.fetchone()["cnt"] >= 3:
         raise HTTPException(status_code=429, detail="too many complaints")
 
+    if body.user_token:
+        c.execute(
+            "SELECT COUNT(*) as cnt FROM complaint WHERE user_token=%s AND batch_id=%s AND submitted_at > %s",
+            (body.user_token, batch_id, one_hour_ago)
+        )
+        if c.fetchone()["cnt"] >= 2:
+            raise HTTPException(status_code=429, detail="too many complaints from this user")
+
     now = now_iso()
     c.execute(
         "INSERT INTO complaint (batch_id, reporter_name, reporter_email, description, category, submitted_at, status, user_token) VALUES (%s,%s,%s,%s,%s,%s,'open',%s) RETURNING complaint_id",
-        (batch_id, body.reporter_name, body.reporter_email, body.description, body.category, now, body.user_token)
+        (batch_id, reporter_name, body.reporter_email, description, body.category, now, body.user_token)
     )
     complaint_id = c.fetchone()["complaint_id"]
     conn.commit()
     c.execute("INSERT INTO complaint_rate_limit (batch_id, submitted_at) VALUES (%s,%s)", (batch_id, now))
     conn.commit()
 
-    identity = body.user_token or body.reporter_name
+    identity = body.user_token or reporter_name
     award_achievements(conn, identity, "complaint", batch_id)
 
     return ComplaintCreated(complaint_id=complaint_id)
@@ -497,6 +630,7 @@ def get_risk(batch_id: int, conn=Depends(db)):
 
     score = min(score, 100)
     risk_level = _score_to_level(score)
+
     ai_explanation = ai_module.generate_risk_explanation(batch_data, score, factors)
     shelf_life_days = ai_module.predict_shelf_life(batch_data)
 
@@ -657,7 +791,7 @@ def add_iot_reading(batch_id: int, body: IoTReadingCreate, conn=Depends(db)):
     anomaly_notes = None
 
     if body.sensor_type == "temperature":
-        min_t, max_t = _temp_range(batch_row["product_category"])
+        min_t, max_t = _temp_range_by_cat(batch_row["product_category"])
         if not (min_t <= body.value <= max_t):
             c.execute(
                 "INSERT INTO cold_chain_log (batch_id, station_id, recorded_at, temp_celsius, min_temp, max_temp, within_range) VALUES (%s,%s,%s,%s,%s,%s,0)",
@@ -683,6 +817,7 @@ def add_iot_reading(batch_id: int, body: IoTReadingCreate, conn=Depends(db)):
 
 @router.post("/api/batch/{batch_id}/iot/simulate", response_model=IoTSimulateResponse, status_code=201)
 def simulate_iot(batch_id: int, conn=Depends(db)):
+    import random
     c = conn.cursor()
     c.execute("SELECT product_category FROM batch WHERE batch_id=%s", (batch_id,))
     batch_row = c.fetchone()
@@ -701,7 +836,7 @@ def simulate_iot(batch_id: int, conn=Depends(db)):
         raise HTTPException(status_code=500, detail="no stations available")
     station_id = station_row["station_id"]
 
-    min_t, max_t = _temp_range(batch_row["product_category"])
+    min_t, max_t = _temp_range_by_cat(batch_row["product_category"])
     mid_t = (min_t + max_t) / 2
     now_dt = datetime.utcnow()
     spike_positions = {3, 7} if has_critical_recall else set()
@@ -883,6 +1018,8 @@ def add_crowd_rating(batch_id: int, body: CrowdRatingCreate, conn=Depends(db)):
     c.execute("SELECT batch_id FROM batch WHERE batch_id=%s", (batch_id,))
     if not c.fetchone():
         raise HTTPException(status_code=404, detail="batch not found")
+    if not 1 <= body.stars <= 5:
+        raise HTTPException(status_code=400, detail="Stars must be 1-5")
     c.execute("SELECT rating_id FROM crowd_rating WHERE batch_id=%s AND user_token=%s", (batch_id, body.user_token))
     if c.fetchone():
         raise HTTPException(status_code=400, detail="user already rated this batch")
@@ -977,6 +1114,157 @@ def register_scan(body: ScanRegisterRequest, conn=Depends(db)):
     conn.commit()
     award_achievements(conn, body.user_token, "scan", batch_id)
     return ScanRegisterResponse(batch_id=batch_id, qr_code=b["qr_code"], already_registered=False)
+
+
+@router.post("/api/scan/auto-import")
+def auto_import_product(body: AutoImportRequest, conn=Depends(db)):
+    import urllib.request as urlreq
+    from datetime import datetime as dt, timedelta as td
+
+    barcode = body.barcode
+
+    c = conn.cursor()
+
+    existing = _lookup_batch_by_code(c, barcode)
+    if existing:
+        return {"qr_code": existing["qr_code"], "created": False, "product_name": existing["product_name"]}
+
+    try:
+        url = f"https://world.openfoodfacts.org/api/v0/product/{barcode}.json"
+        with urlreq.urlopen(url, timeout=5) as resp:
+            data = json.loads(resp.read())
+    except Exception:
+        raise HTTPException(status_code=502, detail="OpenFoodFacts nicht erreichbar")
+
+    if data.get("status") != 1 or not data.get("product"):
+        raise HTTPException(status_code=404, detail="Produkt nicht in OpenFoodFacts gefunden")
+
+    p = data["product"]
+    product_name = (p.get("product_name") or p.get("product_name_de") or "Unbekanntes Produkt").strip()[:120]
+    brand = (p.get("brands") or "").split(",")[0].strip()
+    category_raw = (p.get("categories") or "Lebensmittel").split(",")[0].strip()[:60]
+    origins = (p.get("origins") or p.get("countries") or "").split(",")[0].strip() or "Unbekannt"
+    nutriscore_grade = (p.get("nutriscore_grade") or "").lower()
+    nm = p.get("nutriments") or {}
+
+    qr_code = barcode
+    now = now_iso()
+
+    harvest_date = (dt.utcnow() - td(days=65)).strftime("%Y-%m-%d")
+
+    c.execute(
+        "INSERT INTO batch (product_name, product_category, origin_farm, origin_country, harvest_date, qr_code, batch_code, created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING batch_id",
+        (product_name, category_raw, brand or "Unbekannt", origins, harvest_date, qr_code, barcode, now)
+    )
+    bid = c.fetchone()["batch_id"]
+    conn.commit()
+    generate_qr(bid, qr_code)
+
+    stations = _get_or_create_generic_stations(c, conn, origins)
+    sid_farm   = stations["farm"]
+    sid_proc   = stations["processing"]
+    sid_stor   = stations["storage"]
+    sid_trans  = stations["transport"]
+    sid_retail = stations["retailer"]
+
+    base = dt.utcnow() - td(days=60)
+
+    def dstr(days_offset, hour=8):
+        return (base + td(days=days_offset)).strftime(f"%Y-%m-%dT{hour:02d}:00:00")
+
+    events = [
+        (bid, sid_farm,   "arrived",   dstr(0),  f"Ernte/Produktion: {product_name}",       None, 0.1),
+        (bid, sid_proc,   "inspected", dstr(5),  "Qualitätskontrolle bestanden",             None, None),
+        (bid, sid_proc,   "departed",  dstr(8),  "Verarbeitung & Verpackung abgeschlossen",  None, 0.3),
+        (bid, sid_stor,   "stored",    dstr(10), "Einlagerung Lager",                        None, None),
+        (bid, sid_trans,  "shipped",   dstr(45), "Transport zum Detailhandel",               None, 0.4),
+        (bid, sid_retail, "sold",      dstr(55), "Verfügbar im Verkaufsregal",               None, None),
+    ]
+    for e in events:
+        c.execute("INSERT INTO batch_event (batch_id, station_id, event_type, timestamp, notes, temp_celsius, co2_kg) VALUES (%s,%s,%s,%s,%s,%s,%s)", e)
+
+    needs_cold = _needs_refrigeration(category_raw)
+    has_cold_violation = False
+
+    if needs_cold:
+        t_min, t_max = _cold_temp_range(category_raw)
+        t_ok = round((t_min + t_max) / 2, 1)
+        t_bad = round(t_max + 2.8, 1)
+        cold_chain = [
+            (bid, sid_stor,  dstr(10), t_ok,  t_min, t_max, 1),
+            (bid, sid_trans, dstr(45), t_ok,  t_min, t_max, 1),
+            (bid, sid_trans, dstr(46), t_bad, t_min, t_max, 0),
+            (bid, sid_retail,dstr(55), t_ok,  t_min, t_max, 1),
+        ]
+        for cl in cold_chain:
+            c.execute("INSERT INTO cold_chain_log (batch_id, station_id, recorded_at, temp_celsius, min_temp, max_temp, within_range) VALUES (%s,%s,%s,%s,%s,%s,%s)", cl)
+
+        iot = [
+            (bid, sid_stor,  "temperature", t_ok,  dstr(10)),
+            (bid, sid_stor,  "humidity",    60.0,  dstr(10)),
+            (bid, sid_trans, "temperature", t_bad, dstr(46)),
+            (bid, sid_trans, "humidity",    55.0,  dstr(46)),
+            (bid, sid_retail,"temperature", t_ok,  dstr(55)),
+            (bid, sid_retail,"humidity",    58.0,  dstr(55)),
+        ]
+        for ir in iot:
+            c.execute("INSERT INTO iot_reading (batch_id, station_id, sensor_type, value, recorded_at) VALUES (%s,%s,%s,%s,%s)", ir)
+
+        has_cold_violation = True
+
+    qcs = [
+        (bid, sid_proc,  dstr(5),  1, "Alle Parameter im Normbereich"),
+        (bid, sid_retail,dstr(55), 1, "Endkontrolle bestanden"),
+    ]
+    for qc in qcs:
+        c.execute("INSERT INTO quality_check (batch_id, station_id, checked_at, passed, notes) VALUES (%s,%s,%s,%s,%s)", qc)
+
+    conn.commit()
+
+    sugar   = float(nm.get("sugars_100g") or 5.0)
+    sat_fat = float(nm.get("saturated-fat_100g") or 1.0)
+    salt    = float(nm.get("salt_100g") or 0.5)
+    grade   = nutriscore_grade if nutriscore_grade in ("a","b","c","d","e") else compute_nutri_grade(sugar, sat_fat, salt)
+    c.execute(
+        "INSERT INTO nutri_score (batch_id, energy_kcal, fat_g, saturated_fat_g, sugar_g, salt_g, fiber_g, protein_g, grade, computed_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+        (bid,
+         float(nm.get("energy-kcal_100g") or 100),
+         float(nm.get("fat_100g") or 2.0),
+         sat_fat, sugar, salt,
+         float(nm.get("fiber_100g") or 1.0),
+         float(nm.get("proteins_100g") or 3.0),
+         grade, now)
+    )
+
+    co2_val    = _deterministic_float(barcode + "_co2",   0.3, 3.8)
+    water_val  = _deterministic_float(barcode + "_water", 30,  420)
+    land_val   = _deterministic_float(barcode + "_land",  0.5, 18)
+    km_val     = _transport_km(barcode, origins)
+
+    c.execute(
+        "INSERT INTO ecological_footprint (batch_id, co2_total_kg, water_liters, land_sqm, transport_km, computed_at) VALUES (%s,%s,%s,%s,%s,%s)",
+        (bid, co2_val, water_val, land_val, km_val, now)
+    )
+
+    risk_score, risk_level, risk_factors, ai_explanation = _compute_auto_risk(has_cold_violation, category_raw)
+    shelf_days = _shelf_life_days(category_raw)
+    c.execute(
+        "INSERT INTO risk_prediction (batch_id, risk_score, risk_level, risk_factors, ai_explanation, shelf_life_days, predicted_at) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+        (bid, risk_score, risk_level, json.dumps(risk_factors, ensure_ascii=False), ai_explanation, shelf_days, now)
+    )
+
+    stages = _price_stages(category_raw)
+    margins = [12.0, 18.0, 8.0, 40.0]
+    for i, stage in enumerate(stages):
+        cost = _deterministic_float(barcode + f"_price_{i}", 0.08, 0.60)
+        notes = "Verarbeitung & Verpackung" if stage == "processing" else ("Detailhandel Marge" if stage == "retail" else None)
+        c.execute("INSERT INTO price_breakdown (batch_id, stage, cost_chf, margin_pct, notes) VALUES (%s,%s,%s,%s,%s)",
+                  (bid, stage, cost, margins[i], notes))
+
+    conn.commit()
+    compute_trust_score(conn, bid)
+
+    return {"qr_code": qr_code, "created": True, "product_name": product_name}
 
 
 def _hash_password(password: str) -> str:

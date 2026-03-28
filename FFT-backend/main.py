@@ -242,12 +242,169 @@ def seed_data():
     conn.close()
 
 
+def seed_product_L2600992():
+    """Insert or recreate demo product L2600992 (Club Mate)."""
+    conn = get_connection()
+    c = conn.cursor()
+
+    # Delete existing entry so we can re-seed with correct data
+    c.execute("SELECT batch_id FROM batch WHERE batch_code=%s OR qr_code=%s", ("L2600992", "L2600992"))
+    existing = c.fetchone()
+    if existing:
+        old_bid = existing["batch_id"]
+        for tbl in ["batch_event", "recall", "complaint", "complaint_rate_limit", "certificate",
+                    "quality_check", "cold_chain_log", "iot_reading", "risk_prediction",
+                    "nutri_score", "ecological_footprint", "price_breakdown", "trust_score",
+                    "crowd_rating", "scan_event", "achievement", "alternative_product",
+                    "ai_chat_message"]:
+            c.execute(f"DELETE FROM {tbl} WHERE batch_id=%s", (old_bid,))
+        c.execute("DELETE FROM batch WHERE batch_id=%s", (old_bid,))
+        conn.commit()
+
+    # Ensure stations exist (use station ids 1-5 from original seed)
+    c.execute("SELECT station_id FROM station WHERE name='Hof Müller' LIMIT 1")
+    if not c.fetchone():
+        conn.close()
+        return
+    sid_farm, sid_proc, sid_stor, sid_trans, sid_retail = 1, 2, 3, 4, 5
+
+    c.execute(
+        "INSERT INTO batch (product_name, product_category, origin_farm, origin_country, harvest_date, qr_code, batch_code, created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING batch_id",
+        ("Club Mate", "Getränke", "Hacienda La Merced", "Argentinien", "2025-11-15", "L2600992", "L2600992", "2026-01-10T06:00:00")
+    )
+    bid = c.fetchone()["batch_id"]
+    conn.commit()
+
+    generate_qr(bid, "L2600992")
+
+    events = [
+        (bid, sid_farm,   "arrived",   "2025-11-15T08:00:00", "Maté-Ernte abgeschlossen, Argentinien",          22.0, 0.3),
+        (bid, sid_proc,   "inspected", "2025-11-20T10:00:00", "Qualitätskontrolle & Bio-Zertifikat geprüft",    None, None),
+        (bid, sid_proc,   "departed",  "2025-12-01T07:00:00", "Abfüllung & Abfertigung Hamburg",                None, 4.8),
+        (bid, sid_stor,   "stored",    "2026-01-10T12:00:00", "Einlagerung Kühlhaus Zürich",                     18.0, None),
+        (bid, sid_trans,  "shipped",   "2026-03-15T05:00:00", "Lieferung Detailhandel — Temperaturanstieg",     28.0, 0.4),
+        (bid, sid_retail, "sold",      "2026-03-20T10:00:00", "Verfügbar im Regal",                              None, None),
+    ]
+    for e in events:
+        c.execute("INSERT INTO batch_event (batch_id, station_id, event_type, timestamp, notes, temp_celsius, co2_kg) VALUES (%s,%s,%s,%s,%s,%s,%s)", e)
+    conn.commit()
+
+    cold_chain = [
+        (bid, sid_stor,  "2026-01-10T12:00:00", 18.0, 10.0, 25.0, 1),
+        (bid, sid_stor,  "2026-02-01T08:00:00", 17.5, 10.0, 25.0, 1),
+        (bid, sid_trans, "2026-03-15T05:00:00", 28.0, 10.0, 25.0, 0),
+        (bid, sid_trans, "2026-03-15T10:00:00", 31.2, 10.0, 25.0, 0),
+        (bid, sid_trans, "2026-03-15T15:00:00", 22.5, 10.0, 25.0, 1),
+        (bid, sid_retail,"2026-03-20T10:00:00", 19.5, 10.0, 25.0, 1),
+    ]
+    for cl in cold_chain:
+        c.execute("INSERT INTO cold_chain_log (batch_id, station_id, recorded_at, temp_celsius, min_temp, max_temp, within_range) VALUES (%s,%s,%s,%s,%s,%s,%s)", cl)
+    conn.commit()
+
+    iot_readings = [
+        (bid, sid_stor,  "temperature", 18.0, "2026-01-10T12:00:00"),
+        (bid, sid_stor,  "humidity",    55.0, "2026-01-10T12:00:00"),
+        (bid, sid_trans, "temperature", 28.0, "2026-03-15T05:00:00"),
+        (bid, sid_trans, "humidity",    62.0, "2026-03-15T05:00:00"),
+        (bid, sid_trans, "temperature", 31.2, "2026-03-15T10:00:00"),
+        (bid, sid_trans, "humidity",    58.0, "2026-03-15T10:00:00"),
+        (bid, sid_retail,"temperature", 19.5, "2026-03-20T10:00:00"),
+        (bid, sid_retail,"humidity",    50.0, "2026-03-20T10:00:00"),
+    ]
+    for ir in iot_readings:
+        c.execute("INSERT INTO iot_reading (batch_id, station_id, sensor_type, value, recorded_at) VALUES (%s,%s,%s,%s,%s)", ir)
+    conn.commit()
+
+    c.execute(
+        "INSERT INTO recall (batch_id, reason, severity, issued_at, resolved_at, issued_by) VALUES (%s,%s,%s,%s,%s,%s)",
+        (bid, "Temperaturüberschreitung während Transport (31°C für >5h)", "warning", "2026-03-16T08:00:00", None, "Lebensmittelkontrolle Zürich")
+    )
+    conn.commit()
+
+    complaints = [
+        (bid, "Jonas Weber",   "jonas@example.com", "Flasche leicht aufgebläht",     "quality", "2026-03-22T09:00:00", "open"),
+        (bid, "Laura Schmid",  None,                 "Geschmack ungewöhnlich bitter", "quality", "2026-03-23T14:00:00", "reviewed"),
+    ]
+    for comp in complaints:
+        c.execute("INSERT INTO complaint (batch_id, reporter_name, reporter_email, description, category, submitted_at, status) VALUES (%s,%s,%s,%s,%s,%s,%s)", comp)
+        c.execute("INSERT INTO complaint_rate_limit (batch_id, submitted_at) VALUES (%s,%s)", (bid, comp[5]))
+    conn.commit()
+
+    certs = [
+        (bid, "bio",       "Bio Argentina",         "2027-06-01", 1),
+        (bid, "fairtrade", "Fairtrade International","2027-12-31", 1),
+    ]
+    for cert in certs:
+        c.execute("INSERT INTO certificate (batch_id, cert_type, issued_by, valid_until, verified) VALUES (%s,%s,%s,%s,%s)", cert)
+    conn.commit()
+
+    quality_checks = [
+        (bid, sid_proc,   "2025-11-20T10:30:00", 1, "Koffein- & Zuckergehalt im Normbereich"),
+        (bid, sid_stor,   "2026-01-10T13:00:00", 1, "Lagertemperatur OK, keine Undichtigkeiten"),
+        (bid, sid_retail, "2026-03-20T10:30:00", 0, "Temperaturanomalie während Transport festgestellt"),
+    ]
+    for qc in quality_checks:
+        c.execute("INSERT INTO quality_check (batch_id, station_id, checked_at, passed, notes) VALUES (%s,%s,%s,%s,%s)", qc)
+    conn.commit()
+
+    c.execute(
+        "INSERT INTO risk_prediction (batch_id, risk_score, risk_level, risk_factors, ai_explanation, shelf_life_days, predicted_at) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+        (bid, 68, "high",
+         json.dumps(["Hitzestress während Transport: 31.2°C für >5h", "Aktive Rückrufwarnung wegen Temperaturüberschreitung", "Endkontrolle nicht bestanden", "2 Kundenbeschwerden eingegangen"]),
+         "Erhöhtes Risiko durch dokumentierte Hitzeexposition während Transport (31.2°C über 5 Stunden). KI-Analyse ergibt 68% Wahrscheinlichkeit für Qualitätsverlust — Kohlensäureverlust und Geschmacksveränderung möglich. Kühlkettenbruch nicht relevant; Wärmebelastung ist das Hauptproblem.",
+         14, "2026-03-20T11:00:00")
+    )
+    conn.commit()
+
+    sugar, sat_fat, salt = 5.6, 0.0, 0.01
+    grade = compute_nutri_grade(sugar, sat_fat, salt)
+    c.execute(
+        "INSERT INTO nutri_score (batch_id, energy_kcal, fat_g, saturated_fat_g, sugar_g, salt_g, fiber_g, protein_g, grade, computed_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+        (bid, 25.0, 0.0, 0.0, 5.6, 0.01, 0.0, 0.2, grade, "2026-01-10T08:00:00")
+    )
+    conn.commit()
+
+    c.execute(
+        "INSERT INTO ecological_footprint (batch_id, co2_total_kg, water_liters, land_sqm, transport_km, computed_at) VALUES (%s,%s,%s,%s,%s,%s)",
+        (bid, 3.8, 80.0, 2.1, 11800, "2026-01-10T08:00:00")
+    )
+    conn.commit()
+
+    price_breakdown = [
+        (bid, "farm",       0.30, 12.0, "Maté-Ernte Argentinien"),
+        (bid, "processing", 0.45, 18.0, "Abfüllung & Karbonisierung"),
+        (bid, "transport",  0.55, 22.0, "Seefracht + LKW CH"),
+        (bid, "retail",     1.20, 42.0, "Detailhandel Marge"),
+    ]
+    for pb in price_breakdown:
+        c.execute("INSERT INTO price_breakdown (batch_id, stage, cost_chf, margin_pct, notes) VALUES (%s,%s,%s,%s,%s)", pb)
+    conn.commit()
+
+    alternatives = [
+        (bid, "Charitea Mate",    "Kürzere Transportwege, keine Temperaturprobleme", 2.1, "B", 82),
+        (bid, "Bio Mate Tee (lose)", "Regionaler Händler, deutlich geringerer CO₂-Fußabdruck", 0.8, "A", 90),
+    ]
+    for alt in alternatives:
+        c.execute("INSERT INTO alternative_product (batch_id, product_name, reason, co2_kg, nutri_grade, trust_score) VALUES (%s,%s,%s,%s,%s,%s)", alt)
+    conn.commit()
+
+    c.execute(
+        "INSERT INTO crowd_rating (batch_id, stars, comment, user_token, submitted_at) VALUES (%s,%s,%s,%s,%s)",
+        (bid, 3, "Schmeckt gut, aber nach dem Rückruf bin ich unsicher", "demo-user-002", "2026-03-23T18:00:00")
+    )
+    conn.commit()
+
+    compute_trust_score(conn, bid)
+    conn.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     os.makedirs(QR_DIR, exist_ok=True)
     init_db()
     if is_db_empty():
         seed_data()
+    seed_product_L2600992()
     yield
 
 

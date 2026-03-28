@@ -47,6 +47,29 @@ const IconSettings = () => (
   </svg>
 );
 
+function classifyInput(raw: string): { type: "ean" | "batch" | "url" | "too_short" | "too_long" | "unknown"; code: string } {
+  const s = raw.trim();
+  if (!s) return { type: "unknown", code: s };
+
+  if (s.includes("/scan/")) {
+    const parts = s.split("/scan/");
+    return { type: "url", code: parts[parts.length - 1].split("?")[0].trim() };
+  }
+
+  if (/^\d+$/.test(s)) {
+    if (s.length < 6) return { type: "too_short", code: s };
+    if (s.length > 14) return { type: "too_long", code: s };
+    return { type: "ean", code: s };
+  }
+
+  if (/^[A-Za-z0-9\-_.]+$/.test(s)) {
+    if (s.length < 2) return { type: "too_short", code: s };
+    return { type: "batch", code: s };
+  }
+
+  return { type: "unknown", code: s };
+}
+
 export default function ScannerPage() {
   const navigate = useNavigate();
   const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -54,6 +77,7 @@ export default function ScannerPage() {
   const [status, setStatus] = useState<"starting" | "active" | "error">("starting");
   const [errorMsg, setErrorMsg] = useState("");
   const [manualCode, setManualCode] = useState("");
+  const [inputError, setInputError] = useState("");
   const [batches, setBatches] = useState<BatchListItem[]>([]);
   const [suggestions, setSuggestions] = useState<BatchListItem[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -123,14 +147,31 @@ export default function ScannerPage() {
   }, []);
 
   const submitManual = (code?: string) => {
-    const c = (code ?? manualCode).trim();
-    if (!c) return;
+    const raw = code ?? manualCode;
+    const classified = classifyInput(raw);
+
+    if (classified.type === "too_short") {
+      setInputError(tr.inputTooShort);
+      return;
+    }
+    if (classified.type === "too_long") {
+      setInputError(tr.inputTooLong);
+      return;
+    }
+    if (classified.type === "unknown") {
+      if (!classified.code) return;
+      setInputError(tr.inputInvalidFormat);
+      return;
+    }
+
+    setInputError("");
     setShowSuggestions(false);
-    setTimeout(() => navigate(`/scan/${encodeURIComponent(c)}`), 0);
+    setTimeout(() => navigate(`/scan/${encodeURIComponent(classified.code)}`), 0);
   };
 
   const handleManualChange = (value: string) => {
     setManualCode(value);
+    setInputError("");
     const q = value.trim().toLowerCase();
     if (!q) {
       setSuggestions([]);
@@ -203,11 +244,17 @@ export default function ScannerPage() {
               onFocus={() => manualCode.trim() && setShowSuggestions(suggestions.length > 0)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               autoComplete="off"
+              style={inputError ? { borderColor: "var(--red, #DC2626)" } : undefined}
             />
             <button className="scanner-manual-btn" onClick={() => submitManual()}>
               {tr.search}
             </button>
           </div>
+          {inputError && (
+            <div style={{ fontSize: 12, color: "var(--red, #DC2626)", marginTop: 5, paddingLeft: 2 }}>
+              {inputError}
+            </div>
+          )}
           {showSuggestions && (
             <div style={{
               position: "absolute",

@@ -105,6 +105,17 @@ async function fetchOpenFoodFacts(barcode: string): Promise<OFFProduct | null> {
   return null;
 }
 
+function isWaterCategory(categories?: string): boolean {
+  if (!categories) return false;
+  const c = categories.toLowerCase();
+  return c.includes("water") || c.includes("wasser") || c.includes("eau") || c.includes("mineral");
+}
+
+function allNutrientsZero(nm: Record<string, number>): boolean {
+  const keys = ["energy-kcal_100g", "fat_100g", "saturated-fat_100g", "sugars_100g", "fiber_100g", "proteins_100g", "salt_100g"];
+  return keys.every((k) => !nm[k] || Number(nm[k]) === 0);
+}
+
 function ExternalProduct({ product, barcode }: { product: OFFProduct; barcode: string }) {
   const grade = product.nutriscore_grade?.toLowerCase();
   const nm = product.nutriments ?? {};
@@ -120,6 +131,8 @@ function ExternalProduct({ product, barcode }: { product: OFFProduct; barcode: s
     { label: "Protein", key: "proteins_100g", unit: "g" },
     { label: "Salz", key: "salt_100g", unit: "g" },
   ];
+
+  const showWaterMsg = isWaterCategory(product.categories) && allNutrientsZero(nm);
 
   return (
     <div className="scan-page">
@@ -225,7 +238,11 @@ function ExternalProduct({ product, barcode }: { product: OFFProduct; barcode: s
             })}
           </div>
 
-          {Object.keys(nm).length > 0 && (
+          {showWaterMsg ? (
+            <div style={{ fontSize: 13, color: "var(--tx-3)", fontStyle: "italic", padding: "8px 0" }}>
+              Mineralwasser / kein Nährwertgehalt
+            </div>
+          ) : Object.keys(nm).length > 0 && (
             <table className="nutri-table">
               <tbody>
                 {nutrients.filter(n => nm[n.key] != null).map(n => (
@@ -299,6 +316,22 @@ function StarRow({ score }: { score: number }) {
   );
 }
 
+function ImportingState({ message }: { message: string }) {
+  return (
+    <div className="scan-page scan-state">
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: "50%",
+          border: "3px solid var(--accent)",
+          borderTopColor: "transparent",
+          animation: "spin 0.8s linear infinite",
+        }} />
+        <p style={{ color: "var(--tx-2)", fontSize: 14 }}>{message}</p>
+      </div>
+    </div>
+  );
+}
+
 function Skeleton() {
   return <SpinnerPage />;
 }
@@ -308,8 +341,10 @@ export default function ScanPage() {
   const [batch, setBatch] = useState<BatchDetail | null>(null);
   const [offProduct, setOffProduct] = useState<OFFProduct | null>(null);
   const [loading, setLoading] = useState(true);
+  const [importLoading, setImportLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [connError, setConnError] = useState(false);
+  const [allBatches, setAllBatches] = useState<import("./types").BatchListItem[]>([]);
   const { lang, openPanel } = useSettings();
   const tr = getT(lang);
 
@@ -320,6 +355,7 @@ export default function ScanPage() {
   useEffect(() => {
     if (!decoded) return;
     setLoading(true);
+    setImportLoading(false);
     setBatch(null);
     setOffProduct(null);
     setNotFound(false);
@@ -333,9 +369,20 @@ export default function ScanPage() {
       .catch(async (err: any) => {
         if (err?.status === 404) {
           if (/^\d{6,14}$/.test(decoded)) {
-            const off = await fetchOpenFoodFacts(decoded);
-            if (off) { setOffProduct(off); return; }
+            setLoading(false);
+            setImportLoading(true);
+            try {
+              const imported = await api.autoImport(decoded);
+              const data = await api.getBatch(imported.qr_code);
+              setBatch(data);
+              if (userToken) api.registerScan(imported.qr_code, userToken).catch(() => {});
+              setImportLoading(false);
+              return;
+            } catch {
+              setImportLoading(false);
+            }
           }
+          api.getBatches().then(setAllBatches).catch(() => {});
           setNotFound(true);
         } else {
           setConnError(true);
@@ -345,6 +392,8 @@ export default function ScanPage() {
   }, [decoded]);
 
   if (loading) return <Skeleton />;
+
+  if (importLoading) return <ImportingState message={tr.importLoading} />;
 
   if (offProduct) return <ExternalProduct product={offProduct} barcode={decoded} />;
 
@@ -362,6 +411,37 @@ export default function ScanPage() {
           <IconCamera />
           {tr.rescan}
         </Link>
+        {allBatches.length > 0 && (
+          <div style={{ marginTop: 28, width: "100%", maxWidth: 420, textAlign: "left" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--tx-3)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Verfügbare Produkte
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {allBatches.map((b) => (
+                <Link
+                  key={b.batch_id}
+                  to={`/scan/${encodeURIComponent(b.qr_code)}`}
+                  style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "10px 14px",
+                    background: "var(--surface-2)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    textDecoration: "none",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: "var(--tx-1)" }}>{b.product_name}</div>
+                    {b.batch_code && (
+                      <div style={{ fontSize: 12, color: "var(--accent)", marginTop: 2 }}>{b.batch_code}</div>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--tx-3)" }}>{b.qr_code}</div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -424,7 +504,7 @@ export default function ScanPage() {
       <JourneyTimeline events={batch.journey} />
       <IoTDisplay batchId={batch.batch_id} />
       {batch.cold_chain_ok != null && <ColdChainChart batchId={batch.batch_id} />}
-      {batch.nutri_grade && <NutriScoreBadge batchId={batch.batch_id} grade={batch.nutri_grade} />}
+      {batch.nutri_grade && <NutriScoreBadge batchId={batch.batch_id} grade={batch.nutri_grade} category={batch.product_category} />}
       <EcoFootprint batchId={batch.batch_id} />
       <Co2Display co2TotalKg={batch.co2_total_kg} />
       <PriceBreakdown batchId={batch.batch_id} />

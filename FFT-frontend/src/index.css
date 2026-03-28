@@ -613,33 +613,57 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
 
 /* ── Leaderboard ──────────────────────────────────────────────── */
 .leaderboard { display: flex; flex-direction: column; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow); }
+.lb-header-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 18px; background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.lb-header-label { font-size: 11px; font-weight: 600; color: var(--tx-3); text-transform: uppercase; letter-spacing: .06em; }
+.lb-header-score { min-width: 140px; text-align: right; }
 .leaderboard-item {
   display: flex; align-items: center; gap: 14px;
   background: var(--surface); padding: 14px 18px;
   border-bottom: 1px solid var(--border);
-  transition: background .12s; position: relative; overflow: hidden;
+  transition: background .15s, transform .12s; position: relative; overflow: hidden;
+  text-decoration: none;
 }
 .leaderboard-item:last-child { border-bottom: none; }
-.leaderboard-item:hover { background: var(--surface-2); }
+.leaderboard-item:hover { background: var(--surface-2); transform: translateX(2px); }
+/* Gold / Silver / Bronze rows */
 .leaderboard-item--gold {
-  background: linear-gradient(90deg, #FFFBEB 0%, #FFF8D6 100%);
+  background: linear-gradient(90deg, #FFFBEB 0%, #FEF9E7 100%);
   border-bottom-color: #FDE68A;
 }
+.leaderboard-item--gold .lb-name { color: #78350F; }
+.leaderboard-item--gold .lb-origin { color: #B45309; }
+.leaderboard-item--gold:hover { background: linear-gradient(90deg, #FEF3C7 0%, #FEF9E7 100%); }
 .leaderboard-item--gold::after {
   content: ''; position: absolute; top: 0; left: -120%; width: 50%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
-  animation: gold-shimmer 2.6s ease-in-out infinite;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent);
+  animation: gold-shimmer 2.8s ease-in-out infinite;
 }
 @keyframes gold-shimmer { 0%{left:-120%} 60%,100%{left:160%} }
-.lb-rank { font-size: 20px; flex-shrink: 0; min-width: 34px; text-align: center; }
-.lb-main { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.lb-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.leaderboard-item--silver { background: linear-gradient(90deg, #F8FAFC 0%, #F1F5F9 100%); border-bottom-color: #CBD5E1; }
+.leaderboard-item--silver .lb-name { color: #1E293B; }
+.leaderboard-item--silver .lb-origin { color: #475569; }
+.leaderboard-item--bronze { background: linear-gradient(90deg, #FFF7ED 0%, #FEF3E2 100%); border-bottom-color: #FED7AA; }
+.leaderboard-item--bronze .lb-name { color: #7C2D12; }
+.leaderboard-item--bronze .lb-origin { color: #9A3412; }
+/* Rank column */
+.lb-rank-col { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; min-width: 36px; }
+.lb-medal { font-size: 14px; line-height: 1; }
+/* Product info */
+.lb-main { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.lb-name-row { display: flex; align-items: center; gap: 7px; }
+.lb-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tx-1); }
+.lb-nutri { flex-shrink: 0; }
 .lb-origin { font-size: 12px; color: var(--tx-3); }
-.lb-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
-.lb-score-wrap { display: flex; align-items: center; gap: 8px; }
-.lb-score-bar-track { width: 64px; height: 5px; background: var(--border); border-radius: 999px; overflow: hidden; }
-.lb-score-bar-fill { height: 100%; border-radius: 999px; transition: width .9s cubic-bezier(.4,0,.2,1); }
-.lb-score-num { font-size: 13px; font-weight: 800; min-width: 26px; text-align: right; letter-spacing: -.02em; }
+/* Score column */
+.lb-right { flex-shrink: 0; display: flex; align-items: center; }
+.lb-score-wrap { display: flex; align-items: center; gap: 10px; }
+.lb-score-bar-track { width: 100px; height: 6px; background: var(--border); border-radius: 999px; overflow: hidden; }
+.lb-score-bar-fill { height: 100%; border-radius: 999px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+.lb-score-num { font-size: 14px; font-weight: 800; min-width: 30px; text-align: right; letter-spacing: -.02em; }
 
 /* ── Scanner page ─────────────────────────────────────────────── */
 .scanner-page { max-width: 480px; margin: 0 auto; padding: 20px 16px; }

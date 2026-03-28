@@ -1,6 +1,19 @@
 from __future__ import annotations
 from typing import Optional, List, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
+
+
+class AutoImportRequest(BaseModel):
+    barcode: str
+
+    @validator("barcode")
+    def barcode_must_be_valid(cls, v):
+        v = v.strip()
+        if not v:
+            raise ValueError("barcode is required")
+        if len(v) > 50:
+            raise ValueError("barcode too long")
+        return v
 
 
 class JourneyEvent(BaseModel):

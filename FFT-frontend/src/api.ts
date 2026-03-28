@@ -106,4 +106,11 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ image_base64: imageBase64 }),
     }),
+
+  autoImport: (barcode: string) =>
+    req<{ qr_code: string; created: boolean; product_name: string }>("/api/scan/auto-import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ barcode }),
+    }),
 };

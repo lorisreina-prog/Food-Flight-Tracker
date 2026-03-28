@@ -5,6 +5,7 @@ import type { NutriScoreResponse } from "./types";
 interface Props {
   batchId: number;
   grade: string;
+  category?: string;
 }
 
 const GRADE_CONFIG: Record<string, { bg: string; faded: string }> = {
@@ -15,12 +16,32 @@ const GRADE_CONFIG: Record<string, { bg: string; faded: string }> = {
   E: { bg: "#DC2626", faded: "#FEF2F2" },
 };
 
-export default function NutriScoreBadge({ batchId, grade }: Props) {
+function isWaterLike(category?: string): boolean {
+  if (!category) return false;
+  const c = category.toLowerCase();
+  return c.includes("water") || c.includes("wasser") || c.includes("eau") || c.includes("mineral");
+}
+
+function allZero(data: NutriScoreResponse): boolean {
+  return (
+    data.energy_kcal === 0 &&
+    data.fat_g === 0 &&
+    data.saturated_fat_g === 0 &&
+    data.sugar_g === 0 &&
+    data.salt_g === 0 &&
+    data.fiber_g === 0 &&
+    data.protein_g === 0
+  );
+}
+
+export default function NutriScoreBadge({ batchId, grade, category }: Props) {
   const [data, setData] = useState<NutriScoreResponse | null>(null);
 
   useEffect(() => {
     api.getNutriScore(batchId).then(setData).catch(() => {});
   }, [batchId]);
+
+  const showWaterMsg = data && isWaterLike(category) && allZero(data);
 
   return (
     <div className="card">
@@ -46,7 +67,11 @@ export default function NutriScoreBadge({ batchId, grade }: Props) {
           );
         })}
       </div>
-      {data && (
+      {showWaterMsg ? (
+        <div style={{ fontSize: 13, color: "var(--tx-3)", fontStyle: "italic", padding: "4px 0" }}>
+          Mineralwasser / kein Nährwertgehalt
+        </div>
+      ) : data && (
         <table className="nutri-table">
           <tbody>
             <tr><td>Energie</td><td>{data.energy_kcal.toFixed(0)} kcal</td></tr>
