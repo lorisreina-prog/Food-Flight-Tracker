@@ -67,6 +67,7 @@ export interface BatchListItem {
   batch_id: number;
   product_name: string;
   qr_code: string;
+  batch_code: string | null;
   origin_country: string;
   harvest_date: string;
   recall_status: string;

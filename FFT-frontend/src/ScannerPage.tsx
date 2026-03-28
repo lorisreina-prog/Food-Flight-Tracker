@@ -5,6 +5,8 @@ import Logo from "./Logo";
 import { useSettings } from "./SettingsContext";
 import { getT } from "./i18n";
 import type { Lang } from "./i18n";
+import { api } from "./api";
+import type { BatchListItem } from "./types";
 
 const FORMATS = [
   Html5QrcodeSupportedFormats.EAN_13,
@@ -52,8 +54,15 @@ export default function ScannerPage() {
   const [status, setStatus] = useState<"starting" | "active" | "error">("starting");
   const [errorMsg, setErrorMsg] = useState("");
   const [manualCode, setManualCode] = useState("");
+  const [batches, setBatches] = useState<BatchListItem[]>([]);
+  const [suggestions, setSuggestions] = useState<BatchListItem[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const { lang, openPanel } = useSettings();
   const tr = getT(lang);
+
+  useEffect(() => {
+    api.getBatches().then(setBatches).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const regionId = "qr-reader-region";
@@ -113,10 +122,29 @@ export default function ScannerPage() {
     };
   }, []);
 
-  const submitManual = () => {
-    const code = manualCode.trim();
-    if (!code) return;
-    setTimeout(() => navigate(`/scan/${encodeURIComponent(code)}`), 0);
+  const submitManual = (code?: string) => {
+    const c = (code ?? manualCode).trim();
+    if (!c) return;
+    setShowSuggestions(false);
+    setTimeout(() => navigate(`/scan/${encodeURIComponent(c)}`), 0);
+  };
+
+  const handleManualChange = (value: string) => {
+    setManualCode(value);
+    const q = value.trim().toLowerCase();
+    if (!q) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    const filtered = batches.filter(
+      (b) =>
+        b.product_name.toLowerCase().includes(q) ||
+        b.qr_code.toLowerCase().includes(q) ||
+        (b.batch_code ?? "").toLowerCase().includes(q)
+    );
+    setSuggestions(filtered);
+    setShowSuggestions(filtered.length > 0);
   };
 
   return (
@@ -164,19 +192,84 @@ export default function ScannerPage() {
 
       <div className="scanner-manual">
         <h3>{tr.manualEntry}</h3>
-        <div className="scanner-manual-row">
-          <input
-            className="scanner-manual-input"
-            placeholder="z.B. 7640150491254 oder LOT2024-B03"
-            value={manualCode}
-            onChange={(e) => setManualCode(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && submitManual()}
-            autoComplete="off"
-          />
-          <button className="scanner-manual-btn" onClick={submitManual}>
-            {tr.search}
-          </button>
+        <div style={{ position: "relative" }}>
+          <div className="scanner-manual-row">
+            <input
+              className="scanner-manual-input"
+              placeholder="z.B. 7640150491254 oder LOT2024-B03"
+              value={manualCode}
+              onChange={(e) => handleManualChange(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && submitManual()}
+              onFocus={() => manualCode.trim() && setShowSuggestions(suggestions.length > 0)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              autoComplete="off"
+            />
+            <button className="scanner-manual-btn" onClick={() => submitManual()}>
+              {tr.search}
+            </button>
+          </div>
+          {showSuggestions && (
+            <div style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              right: 0,
+              background: "var(--surface-1)",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              zIndex: 100,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+              maxHeight: 220,
+              overflowY: "auto",
+            }}>
+              {suggestions.map((b) => (
+                <div
+                  key={b.batch_id}
+                  onMouseDown={() => submitManual(b.qr_code)}
+                  style={{
+                    padding: "10px 14px",
+                    cursor: "pointer",
+                    borderBottom: "1px solid var(--border)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2,
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-2)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  <span style={{ fontWeight: 600, fontSize: 13, color: "var(--tx-1)" }}>{b.product_name}</span>
+                  <span style={{ fontSize: 11, color: "var(--tx-3)" }}>
+                    {b.batch_code && <><span style={{ color: "var(--accent)" }}>{b.batch_code}</span> · </>}
+                    {b.qr_code}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+        {batches.length > 0 && !manualCode && (
+          <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {batches.map((b) => (
+              <button
+                key={b.batch_id}
+                onClick={() => submitManual(b.qr_code)}
+                style={{
+                  padding: "4px 10px",
+                  background: "var(--surface-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 999,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "var(--tx-2)",
+                  cursor: "pointer",
+                }}
+              >
+                {b.product_name}
+                {b.batch_code && <span style={{ color: "var(--tx-3)", fontWeight: 400 }}> · {b.batch_code}</span>}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{
