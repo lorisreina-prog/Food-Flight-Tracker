@@ -909,7 +909,7 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
 .settings-theme-swatch--active {
   border-color: var(--swatch-color, var(--accent));
   background: var(--surface);
-  box-shadow: 0 0 0 2px var(--swatch-color, var(--accent)), 0 2px 8px rgba(0,0,0,.08);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), var(--glow-sm)), 0 2px 8px rgba(0,0,0,.08);
 }
 .settings-swatch-dot {
   width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
@@ -936,8 +936,8 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
 .settings-mode-btn:hover { border-color: var(--accent); color: var(--tx); background: var(--surface); }
 .settings-mode-btn--active {
   border-color: var(--accent); color: var(--tx);
-  background: var(--accent-lt);
-  box-shadow: 0 0 0 2px var(--accent);
+  background: rgba(var(--accent-rgb), var(--glow-xs));
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), var(--glow-sm));
 }
 
 /* ── Language selector ───────────────────────────────────────── */
@@ -953,7 +953,7 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
 .settings-lang-btn:hover { border-color: var(--accent); color: var(--tx); background: var(--surface); }
 .settings-lang-btn--active {
   border-color: var(--accent); color: var(--tx);
-  background: var(--accent-lt);
-  box-shadow: 0 0 0 2px var(--accent);
+  background: rgba(var(--accent-rgb), var(--glow-xs));
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), var(--glow-sm));
 }
 .settings-lang-flag { font-size: 20px; line-height: 1; }
