@@ -46,7 +46,7 @@ export default function LoginPage() {
     setError("");
 
     if (!isValidEmail(email)) {
-      setError("Bitte eine gültige E-Mail-Adresse eingeben.");
+      setError(tr.invalidEmail);
       return;
     }
 

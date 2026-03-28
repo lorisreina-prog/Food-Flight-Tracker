@@ -70,7 +70,7 @@ export default function ScannerPage() {
       });
     } catch {
       setStatus("error");
-      setErrorMsg("Scanner konnte nicht initialisiert werden.");
+      setErrorMsg(tr.scannerInitError);
       return;
     }
 
@@ -103,7 +103,7 @@ export default function ScannerPage() {
       .catch((err) => {
         console.error("Scanner error:", err);
         setStatus("error");
-        setErrorMsg("Kamera nicht verfügbar — Berechtigung prüfen oder Code manuell eingeben.");
+        setErrorMsg(tr.cameraUnavailable);
       });
 
     return () => {

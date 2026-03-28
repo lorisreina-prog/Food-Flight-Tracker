@@ -196,7 +196,7 @@ export default function AdminPage() {
                 <div className="recall-strip-header">
                   <span className="recall-strip-blink" />
                   <IconAlertTriangle />
-                  Aktive Rückrufe — {recalls.length} Charge{recalls.length > 1 ? "n" : ""} betroffen
+                  {tr.activeRecallsTitle} — {recalls.length} {recalls.length > 1 ? tr.batchesAffected : tr.batchAffected}
                 </div>
                 {recalls.map((r) => (
                   <div key={r.recall_id} className="recall-strip-item">
@@ -208,7 +208,7 @@ export default function AdminPage() {
                       {r.reason} — {r.issued_by}, {formatDate(r.issued_at)}
                     </div>
                     <button className="btn-sm btn-outline" onClick={() => resolve(r.recall_id)}>
-                      Auflösen
+                      {tr.resolveRecall}
                     </button>
                   </div>
                 ))}
@@ -216,7 +216,7 @@ export default function AdminPage() {
             ) : (
               <div className="recall-strip-ok">
                 <IconCheckCircle />
-                Keine aktiven Rückrufe — alle Chargen unbedenklich
+                {tr.noActiveRecalls}
               </div>
             )}
 

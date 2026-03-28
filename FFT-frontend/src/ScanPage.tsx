@@ -442,7 +442,7 @@ export default function ScanPage() {
 
       <Link to="/scanner" className="scan-fab">
         <IconCamera />
-        Scannen
+        {tr.scanFab}
       </Link>
     </div>
   );

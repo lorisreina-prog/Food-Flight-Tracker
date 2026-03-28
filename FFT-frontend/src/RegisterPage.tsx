@@ -37,13 +37,13 @@ function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
-function PasswordStrength({ password }: { password: string }) {
+function PasswordStrength({ password, tr }: { password: string; tr: ReturnType<typeof import("./i18n").getT> }) {
   if (!password) return null;
 
   const checks = [
-    { label: "Mindestens 6 Zeichen", ok: password.length >= 6 },
-    { label: "Grossbuchstabe", ok: /[A-Z]/.test(password) },
-    { label: "Zahl", ok: /[0-9]/.test(password) },
+    { label: tr.pwCheck6chars, ok: password.length >= 6 },
+    { label: tr.pwCheckUppercase, ok: /[A-Z]/.test(password) },
+    { label: tr.pwCheckNumber, ok: /[0-9]/.test(password) },
   ];
 
   return (
@@ -75,12 +75,12 @@ export default function RegisterPage() {
     setError("");
 
     if (!isValidEmail(email)) {
-      setError("Bitte eine gültige E-Mail-Adresse eingeben.");
+      setError(tr.invalidEmail);
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Die Passwörter stimmen nicht überein.");
+      setError(tr.passwordsMismatch);
       return;
     }
 
@@ -123,7 +123,7 @@ export default function RegisterPage() {
               disabled={loading}
             />
             {email.length > 0 && !isValidEmail(email) && (
-              <div className="auth-field-hint">Bitte eine gültige E-Mail-Adresse eingeben</div>
+              <div className="auth-field-hint">{tr.invalidEmail}</div>
             )}
           </div>
 
@@ -148,7 +148,7 @@ export default function RegisterPage() {
                 {showPassword ? <IconEyeOff /> : <IconEye />}
               </button>
             </div>
-            <PasswordStrength password={password} />
+            <PasswordStrength password={password} tr={tr} />
           </div>
 
           <div className="auth-field">
@@ -173,7 +173,7 @@ export default function RegisterPage() {
               </button>
             </div>
             {confirmPassword && confirmPassword !== password && (
-              <div className="auth-field-hint auth-field-hint--error">Passwörter stimmen nicht überein</div>
+              <div className="auth-field-hint auth-field-hint--error">{tr.passwordsMismatch}</div>
             )}
           </div>
 
