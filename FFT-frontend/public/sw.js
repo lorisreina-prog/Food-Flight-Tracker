@@ -1,14 +1,13 @@
-const CACHE = "essenstracker-v2";
+const CACHE = "foodtrace-v3";
 
-const APP_SHELL = [
-  "/",
-  "/logo.png",
-  "/manifest.json",
-];
+// Vite content-hashed assets are immutable — safe to cache forever
+const IMMUTABLE = /\/assets\//;
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(CACHE).then((cache) =>
+      cache.addAll(["/logo.png", "/manifest.json"])
+    )
   );
   self.skipWaiting();
 });
@@ -26,6 +25,7 @@ self.addEventListener("fetch", (e) => {
   const { request } = e;
   const url = new URL(request.url);
 
+  // API calls: network only, offline error response
   if (url.pathname.startsWith("/api/")) {
     e.respondWith(
       fetch(request).catch(() =>
@@ -37,23 +37,51 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
+  // Navigation requests (HTML): always fetch fresh from network.
+  // This ensures new JS/CSS hashes from the latest build are always loaded.
+  // Only fall back to cached "/" when the network is unavailable (offline).
   if (request.mode === "navigate") {
     e.respondWith(
-      caches.match("/").then((cached) => cached ?? fetch("/"))
+      fetch(request)
+        .then((res) => {
+          const clone = res.clone();
+          caches.open(CACHE).then((c) => c.put("/", clone));
+          return res;
+        })
+        .catch(() =>
+          caches.match("/").then((cached) => cached ?? Response.error())
+        )
     );
     return;
   }
 
+  // Vite content-hashed assets (/assets/main-abc123.js etc.): cache-first.
+  // These filenames change whenever content changes, so cached versions are safe.
+  if (IMMUTABLE.test(url.pathname)) {
+    e.respondWith(
+      caches.match(request).then(
+        (cached) =>
+          cached ??
+          fetch(request).then((res) => {
+            if (res.ok) {
+              caches.open(CACHE).then((c) => c.put(request, res.clone()));
+            }
+            return res;
+          })
+      )
+    );
+    return;
+  }
+
+  // Everything else (logo, manifest, fonts): network-first, cache fallback
   e.respondWith(
-    caches.match(request).then((cached) => {
-      const network = fetch(request).then((res) => {
+    fetch(request)
+      .then((res) => {
         if (res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, clone));
+          caches.open(CACHE).then((c) => c.put(request, res.clone()));
         }
         return res;
-      });
-      return cached ?? network;
-    })
+      })
+      .catch(() => caches.match(request))
   );
 });
