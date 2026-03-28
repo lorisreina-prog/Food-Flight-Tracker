@@ -1,7 +1,7 @@
 export default function Logo({ size = 36 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-label="FoodTrace Logo">
-      <rect width="40" height="40" rx="10" fill="#059669" />
+      <rect width="40" height="40" rx="10" fill="var(--accent)" />
       {/* Source: farm/origin dot */}
       <circle cx="9" cy="31" r="2.8" fill="white" fillOpacity="0.85" />
       {/* Journey path */}
