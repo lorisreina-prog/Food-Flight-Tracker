@@ -120,6 +120,7 @@ function applyTheme(theme: Theme, mode: Mode) {
   r.style.setProperty("--glow-xs",  dark ? ".05" : ".12");
   r.style.setProperty("--glow-sm",  dark ? ".14" : ".28");
   r.style.setProperty("--glow-md",  dark ? ".20" : ".40");
+  r.setAttribute("data-mode", mode);
 }
 
 interface SettingsCtx {
