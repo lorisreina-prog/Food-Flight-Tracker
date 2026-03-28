@@ -1,5 +1,6 @@
 {
-  "buildCommand": "cd FFT-frontend && npm install && npm run build",
+  "installCommand": "cd FFT-frontend && npm install",
+  "buildCommand": "cd FFT-frontend && npm run build",
   "outputDirectory": "FFT-frontend/dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
