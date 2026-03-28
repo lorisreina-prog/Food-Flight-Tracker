@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { register, login } from "./auth";
 import Logo from "./Logo";
 import { useSettings } from "./SettingsContext";
+import { SpinnerInline } from "./Spinner";
 import { getT } from "./i18n";
 
 const IconInfo = () => (
@@ -185,7 +186,7 @@ export default function RegisterPage() {
           )}
 
           <button className="btn-primary" type="submit" disabled={loading} style={{ marginTop: 4 }}>
-            {loading ? tr.registering : tr.createAccount}
+            {loading ? <><SpinnerInline size={15} white /> {tr.registering}</> : tr.createAccount}
           </button>
         </form>
 

@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { login } from "./auth";
 import Logo from "./Logo";
 import { useSettings } from "./SettingsContext";
+import { SpinnerInline } from "./Spinner";
 import { getT } from "./i18n";
 
 const IconInfo = () => (
@@ -120,7 +121,7 @@ export default function LoginPage() {
           )}
 
           <button className="btn-primary" type="submit" disabled={loading} style={{ marginTop: 4 }}>
-            {loading ? tr.signingIn : tr.signIn}
+            {loading ? <><SpinnerInline size={15} white /> {tr.signingIn}</> : tr.signIn}
           </button>
         </form>
 

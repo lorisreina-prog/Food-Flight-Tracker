@@ -17,10 +17,10 @@ export function SpinnerPage() {
   );
 }
 
-export function SpinnerInline({ size = 16 }: { size?: number }) {
+export function SpinnerInline({ size = 16, white = false }: { size?: number; white?: boolean }) {
   return (
     <div
-      className="spinner spinner--inline"
+      className={`spinner spinner--inline${white ? " spinner--white" : ""}`}
       style={{ "--spinner-size": `${size}px` } as React.CSSProperties}
     />
   );

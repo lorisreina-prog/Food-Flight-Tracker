@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { api } from "./api";
 import type { ChatMessage } from "./types";
+import { SpinnerInline } from "./Spinner";
 
 interface Props {
   batch_id?: number;
@@ -111,7 +112,7 @@ export default function ChatAssistant({ batch_id, batchId, product_name, session
             ))}
             {loading && (
               <div className="chat-msg chat-msg--assistant chat-typing">
-                <span className="chat-dot" /><span className="chat-dot" /><span className="chat-dot" />
+                <SpinnerInline size={14} />
               </div>
             )}
             <div ref={bottomRef} />
@@ -131,7 +132,7 @@ export default function ChatAssistant({ batch_id, batchId, product_name, session
               onClick={() => send(input)}
               disabled={loading || !input.trim()}
             >
-              <SvgSend />
+              {loading ? <SpinnerInline size={14} white /> : <SvgSend />}
             </button>
           </div>
         </div>

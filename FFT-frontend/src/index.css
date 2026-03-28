@@ -87,6 +87,10 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   display: inline-block;
   vertical-align: middle;
 }
+.spinner--white {
+  border-color: rgba(255,255,255,.3);
+  border-top-color: #fff;
+}
 .spinner-wrap {
   display: flex; align-items: center; justify-content: center;
   width: 100%; padding: 32px 0;
