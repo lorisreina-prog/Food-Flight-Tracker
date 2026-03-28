@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "./api";
 import type { BatchListItem } from "./types";
 import StatusBadge from "./StatusBadge";
+import Spinner from "./Spinner";
 
 const NUTRI_COLOR: Record<string, string> = {
   A: "#16A34A", B: "#65A30D", C: "#EAB308", D: "#F97316", E: "#DC2626",
@@ -19,7 +20,7 @@ export default function BatchList() {
     api.getBatches().then(setBatches).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="skeleton-card" style={{ height: 200 }} />;
+  if (loading) return <Spinner />;
 
   return (
     <div className="batch-list">

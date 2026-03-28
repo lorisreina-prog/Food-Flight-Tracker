@@ -71,12 +71,30 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   letter-spacing: .1em; margin-bottom: 14px;
 }
 
-/* ── Skeletons ──────────────────────────────────────────────── */
-.skeleton { background: var(--border); border-radius: var(--radius-xs); animation: pulse 1.4s ease-in-out infinite; }
-.skeleton-title { height: 24px; width: 55%; margin-bottom: 10px; }
-.skeleton-line { height: 13px; margin-bottom: 7px; border-radius: 4px; }
-.skeleton-card { border-radius: var(--radius); animation: pulse 1.4s ease-in-out infinite; background: var(--border); }
-@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.45 } }
+/* ── Spinner ────────────────────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.spinner {
+  width: var(--spinner-size, 32px);
+  height: var(--spinner-size, 32px);
+  border-radius: 50%;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--accent);
+  animation: spin .65s linear infinite;
+  flex-shrink: 0;
+}
+.spinner--inline {
+  display: inline-block;
+  vertical-align: middle;
+}
+.spinner-wrap {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; padding: 32px 0;
+}
+.spinner-page {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 60vh;
+}
 
 /* ── Buttons ────────────────────────────────────────────────── */
 .btn-primary {

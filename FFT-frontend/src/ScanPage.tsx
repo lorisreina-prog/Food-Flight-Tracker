@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { api } from "./api";
 import Logo from "./Logo";
 import { useSettings } from "./SettingsContext";
+import { SpinnerPage } from "./Spinner";
 import { getT } from "./i18n";
 import type { BatchDetail } from "./types";
 import { formatDate } from "./types";
@@ -299,15 +300,7 @@ function StarRow({ score }: { score: number }) {
 }
 
 function Skeleton() {
-  return (
-    <div className="scan-page">
-      <div className="skeleton skeleton-title" style={{ width: "70%", height: 32 }} />
-      <div className="skeleton skeleton-line" style={{ width: "50%" }} />
-      <div className="skeleton skeleton-line" style={{ width: "35%", marginBottom: 20 }} />
-      <div className="skeleton skeleton-card" style={{ height: 130 }} />
-      <div className="skeleton skeleton-card" style={{ height: 160, marginTop: 10 }} />
-    </div>
-  );
+  return <SpinnerPage />;
 }
 
 export default function ScanPage() {

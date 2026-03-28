@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
 import type { RiskResponse } from "./types";
+import Spinner from "./Spinner";
 
 interface Props {
   batchId: number;
@@ -44,7 +45,7 @@ export default function RiskCard({ batchId }: Props) {
       .finally(() => setLoading(false));
   }, [batchId]);
 
-  if (loading) return <div className="card skeleton-card" style={{ height: 160 }} />;
+  if (loading) return <div className="card"><Spinner /></div>;
 
   if (error) {
     return (

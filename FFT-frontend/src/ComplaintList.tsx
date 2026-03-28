@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "./api";
 import type { ComplaintListItem } from "./types";
 import { formatDate } from "./types";
+import Spinner from "./Spinner";
 
 const STATUS_COLOR: Record<string, string> = {
   open: "#DC2626",
@@ -51,7 +52,7 @@ export default function ComplaintList() {
     setItems((prev) => prev.map((c) => c.complaint_id === id ? { ...c, status } : c));
   };
 
-  if (loading) return <div className="skeleton-card" style={{ height: 160 }} />;
+  if (loading) return <Spinner />;
 
   return (
     <div className="complaint-list">

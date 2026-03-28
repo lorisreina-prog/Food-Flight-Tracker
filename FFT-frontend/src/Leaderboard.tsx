@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "./api";
 import type { LeaderboardItem, BatchListItem } from "./types";
+import Spinner from "./Spinner";
 
 const NUTRI_COLOR: Record<string, string> = {
   A: "#16A34A", B: "#65A30D", C: "#EAB308", D: "#F97316", E: "#DC2626",
@@ -61,7 +62,7 @@ export default function Leaderboard() {
   const qrFor = (batchId: number) =>
     batches.find((b) => b.batch_id === batchId)?.qr_code ?? String(batchId);
 
-  if (loading) return <div className="skeleton-card" style={{ height: 240 }} />;
+  if (loading) return <Spinner />;
 
   if (!items.length) {
     return (

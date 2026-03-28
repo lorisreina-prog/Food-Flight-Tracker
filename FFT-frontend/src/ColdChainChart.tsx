@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
 import type { ColdChainResponse, ColdChainLogEntry } from "./types";
+import Spinner from "./Spinner";
 
 interface Props {
   batchId: number;
@@ -40,7 +41,7 @@ export default function ColdChainChart({ batchId }: Props) {
     api.getColdChain(batchId).then(setData).catch(() => {}).finally(() => setLoading(false));
   }, [batchId]);
 
-  if (loading) return <div className="card skeleton-card" style={{ height: 80 }} />;
+  if (loading) return <div className="card"><Spinner /></div>;
   if (!data || !data.logs.length) return null;
 
   const logs: ColdChainLogEntry[] = data.logs;
