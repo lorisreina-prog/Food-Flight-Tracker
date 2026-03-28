@@ -1,35 +1,45 @@
-const CACHE = "foodtrace-v3";
-
-// Vite content-hashed assets are immutable — safe to cache forever
+const CACHE = "foodtrace-v4";
 const IMMUTABLE = /\/assets\//;
 
 self.addEventListener("install", (e) => {
+  // Pre-cache only what we're sure exists. Failures here block the SW install,
+  // so we use a try/catch to avoid breaking the entire SW on a 404.
   e.waitUntil(
-    caches.open(CACHE).then((cache) =>
-      cache.addAll(["/logo.png", "/manifest.json"])
-    )
+    caches.open(CACHE)
+      .then((cache) =>
+        Promise.allSettled([
+          cache.add("/logo.png"),
+          cache.add("/manifest.json"),
+        ])
+      )
+      .then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
 self.addEventListener("activate", (e) => {
   e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    )
+    caches.keys()
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+      )
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener("fetch", (e) => {
   const { request } = e;
+
+  // Only handle same-origin requests
+  if (!request.url.startsWith(self.location.origin)) return;
+
   const url = new URL(request.url);
 
-  // API calls: network only, offline error response
+  // API: network only, offline JSON fallback
   if (url.pathname.startsWith("/api/")) {
     e.respondWith(
       fetch(request).catch(() =>
         new Response(JSON.stringify({ error: "Offline" }), {
+          status: 503,
           headers: { "Content-Type": "application/json" },
         })
       )
@@ -37,26 +47,30 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // Navigation requests (HTML): always fetch fresh from network.
-  // This ensures new JS/CSS hashes from the latest build are always loaded.
-  // Only fall back to cached "/" when the network is unavailable (offline).
+  // Navigation (HTML pages): ALWAYS network-first.
+  // This is the critical fix: ensures every page load gets the latest index.html
+  // with correct Vite asset hashes after a new deploy.
+  // Falls back to cached "/" ONLY when truly offline.
   if (request.mode === "navigate") {
     e.respondWith(
       fetch(request)
         .then((res) => {
-          const clone = res.clone();
-          caches.open(CACHE).then((c) => c.put("/", clone));
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE).then((c) => c.put("/", clone));
+          }
           return res;
         })
-        .catch(() =>
-          caches.match("/").then((cached) => cached ?? Response.error())
-        )
+        .catch(async () => {
+          const cached = await caches.match("/");
+          return cached ?? new Response("Offline", { status: 503 });
+        })
     );
     return;
   }
 
-  // Vite content-hashed assets (/assets/main-abc123.js etc.): cache-first.
-  // These filenames change whenever content changes, so cached versions are safe.
+  // Vite content-hashed assets (/assets/*.js, /assets/*.css):
+  // cache-first — these filenames are unique per build, safe to cache forever.
   if (IMMUTABLE.test(url.pathname)) {
     e.respondWith(
       caches.match(request).then(
